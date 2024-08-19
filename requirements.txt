@@ -1,0 +1,5 @@
+gdown
+matplotlib==3.5.1
+numpy==1.21.2
+opencv_python==4.5.5.64
+opencv-contrib-python==4.6.0.66
