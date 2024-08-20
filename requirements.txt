@@ -5,3 +5,5 @@ opencv_python==4.5.5.64
 opencv-contrib-python==4.6.0.66
 tqdm==4.64.0
 pillow
+torchvision
+datasets
