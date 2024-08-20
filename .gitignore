@@ -3,6 +3,8 @@ data/datasets/
 data/local_datasets/
 data/load_dataset.ipynb 
 data/draft.ipynb
+model/checkpoints
+model/SSIT/ssit_draft.ipynb
 dr_clf/
 
 
