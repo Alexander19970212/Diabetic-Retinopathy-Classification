@@ -235,7 +235,7 @@ def build_datasets(dataset_name, input_size=224):
     for subset_name in subset_names:
         image_folder = f'{dataset_root_dir}/{datasets_info[dataset_name]["dataset_name"]}/{datasets_info[dataset_name]["folder_prefix"]}_processed/{subset_name}'
         saliency_map_folder = f'{dataset_root_dir}/{datasets_info[dataset_name]["dataset_name"]}/{datasets_info[dataset_name]["folder_prefix"]}_saliency/{subset_name}'
-        table_path = f'{dataset_root_dir}/{datasets_info[dataset_name]["dataset_name"]}/{datasets_info[dataset_name]["folder_prefix"]}/{subset_name}.csv'
+        table_path = f'{dataset_root_dir}/{datasets_info[dataset_name]["dataset_name"]}/{subset_name}.csv'
 
         #load table
         labelsTable = pd.read_csv(table_path)

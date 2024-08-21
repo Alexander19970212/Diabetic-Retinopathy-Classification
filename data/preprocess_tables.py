@@ -21,7 +21,7 @@ def main():
         print(f'Subset {subset_name}: ')
         path = root_dir+"/"+dataset_name+'/'+folder_prefix+"_processed/"+subset_name
         init_filename = root_dir+"/"+dataset_name+'/'+folder_prefix+"/" + subset_name + ".txt"
-        output_filename = root_dir+"/"+dataset_name+'/'+folder_prefix+"/" + subset_name + ".csv"
+        output_filename = root_dir+"/"+dataset_name+'/' + subset_name + ".csv"
 
         image_files = [f for f in listdir(path) if isfile(join(path, f))]
 
