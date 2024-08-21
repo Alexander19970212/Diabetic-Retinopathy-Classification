@@ -8,3 +8,4 @@ pillow
 torchvision
 datasets
 timm
+transformers
