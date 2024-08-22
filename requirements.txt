@@ -9,3 +9,8 @@ torchvision
 datasets
 timm
 transformers
+scikit-learn
+matplotlib
+evaluate
+accelerate
+wandb

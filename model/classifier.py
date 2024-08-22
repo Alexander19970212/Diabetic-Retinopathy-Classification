@@ -3,6 +3,7 @@ import torch.nn as nn
 import torchvision
 from transformers import PretrainedConfig
 from transformers import PreTrainedModel
+from SSIT.ssit_models import SSitEncoder
 
 backbone_options = {
     "resnet50": {"model": torchvision.models.resnet50, "feature_length":  2048}
@@ -19,6 +20,7 @@ class ClfConfig(PretrainedConfig):
         pretrained = True,
         external_embedings = False,
         external_embedings_len = 384,
+        emb_model_checkpoint = '../checkpoints/pretrained_vits_imagenet_initialized.pt',
         feat_concat = True,
         **kwargs
     ):
@@ -29,8 +31,9 @@ class ClfConfig(PretrainedConfig):
 
         self.external_embedings = external_embedings
         self.external_embedings_len = external_embedings_len
+        self.emb_model_checkpoint = emb_model_checkpoint
 
-        self.feat_concat = True
+        self.feat_concat = feat_concat
         self.global_pool = 'avg'
         self.use_fc_norm = True
             
@@ -52,6 +55,10 @@ class Classifier(PreTrainedModel):
             input_head_size = backbone_options[config.backbone_name]["feature_length"]+emd_chs
             self.fc_norm = nn.LayerNorm(emd_chs) if config.use_fc_norm else nn.Identity()
             self.pre_logits = nn.Identity()
+
+            self.embd_model = SSitEncoder('ViT-S-p16', config.emb_model_checkpoint)
+            for param in self.embd_model.parameters():
+                param.requires_grad = False
         else:
             input_head_size = backbone_options[config.backbone_name]["feature_length"]
 
@@ -75,10 +82,11 @@ class Classifier(PreTrainedModel):
         x = self.pre_logits(x)
         return x
 
-    def forward(self, pixel_values, embedings=None, labels=None):
+    def forward(self, pixel_values, labels=None):
         # define function in transformers library maner
         feateres = self.model(pixel_values)
         if self.external_embedings:
+            embedings = self.embd_model(pixel_values)
             embedings = self.concat_embedings(embedings)
             feateres = torch.cat((feateres, embedings), dim=1)
 

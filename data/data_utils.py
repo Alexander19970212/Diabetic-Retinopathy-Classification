@@ -15,7 +15,7 @@ from PIL import Image, ImageFilter, ImageOps
 from torchvision.transforms import functional as F
 
 datasets_info = {"DDR": {"dataset_name": "DDR-dataset", "folder_prefix": "DR_grading"}}
-dataset_root_dir = "local_datasets"
+# dataset_root_dir = "data/local_datasets"
 
 mean = [0.425753653049469, 0.29737451672554016, 0.21293757855892181]  # eyepacs mean
 std = [0.27670302987098694, 0.20240527391433716, 0.1686241775751114]  # eyepacs std
@@ -229,7 +229,7 @@ def collate_fn(batch):
         'labels': torch.tensor([x['label'] for x in batch])
     }
 
-def build_datasets(dataset_name, input_size=224):
+def build_datasets(dataset_name, dataset_root_dir, input_size=224):
     subset_names = ["test", "train", "valid"]
     subsets = []
     for subset_name in subset_names:
@@ -253,7 +253,7 @@ def build_datasets(dataset_name, input_size=224):
             # random trainsforms with mask
             func_transform = get_func_transform(input_size, train_mode=True)
         else:
-            func_transform = get_func_transform(input_size, train_mode=True)
+            func_transform = get_func_transform(input_size, train_mode=False)
 
         # to Dataset
         dataset = Dataset.from_pandas(labelsTable, preserve_index=False)

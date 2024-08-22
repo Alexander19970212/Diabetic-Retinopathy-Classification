@@ -1,7 +1,10 @@
 import torch
 import torch.nn as nn
 from functools import partial
-from vits import archs, resize_pos_embed
+
+from SSIT.vits import archs, resize_pos_embed
+import SSIT.ssit
+    
 
 def load_checkpoint(model, checkpoint_path, checkpoint_key, linear_key):
     checkpoint = torch.load(checkpoint_path)

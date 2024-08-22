@@ -8,9 +8,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from vits import archs
-
-
 def build_model(args):
     assert args.arch in archs.keys(), 'Not implemented architecture.'
     encoder = partial(
