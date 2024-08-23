@@ -7,7 +7,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--dataset_name', type=str, default="DDR", help='Name of available dataset')
 parser.add_argument('--root_dir', type=str, default="local_datasets", help='Name of available dataset')
 
-datasets_info = {"DDR": {"dataset_name": "DDR-dataset", "folder_prefix": "DR_grading"}}
+datasets_info = {"DDR": {"dataset_name": "DDR-dataset", "folder_prefix": "DR_grading"},
+                 "EyePacs": {"dataset_name": "EyePacs_dataset", "folder_prefix": "EyePacs_grading"}}
 
 def main():
     args = parser.parse_args()
@@ -20,17 +21,27 @@ def main():
     for subset_name in subset_names:
         print(f'Subset {subset_name}: ')
         path = root_dir+"/"+dataset_name+'/'+folder_prefix+"_processed/"+subset_name
-        init_filename = root_dir+"/"+dataset_name+'/'+folder_prefix+"/" + subset_name + ".txt"
+        if args.dataset_name == "DDR":
+            init_filename = root_dir+"/"+dataset_name+'/'+folder_prefix+"/" + subset_name + ".txt"
+        else:
+            init_filename = root_dir+"/"+dataset_name+'/'+folder_prefix+"/" + subset_name + ".csv"
         output_filename = root_dir+"/"+dataset_name+'/' + subset_name + ".csv"
 
         image_files = [f for f in listdir(path) if isfile(join(path, f))]
 
-        data = pd.read_csv(init_filename, sep=" ", header=None)
-        data.columns = ["image_path", "label"]
+        if args.dataset_name == "DDR":
+            data = pd.read_csv(init_filename, sep=" ", header=None)
+            data.columns = ["image", "level"]
+        else:
+            data = pd.read_csv(init_filename)
 
-        image_paths = data["image_path"].to_list()
-        labels = data["label"].to_list()
+        image_paths = data["image"].to_list()
+        labels = data["level"].to_list()
 
+        if args.dataset_name != "DDR":
+            new_image_paths = [x+".jpeg" for x in image_paths]
+            image_paths = new_image_paths
+            
         processed_cntr = 0
         failed_cntr = 0
 
