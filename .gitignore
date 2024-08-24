@@ -3,6 +3,14 @@ data/datasets/
 data/local_datasets/
 data/load_dataset.ipynb 
 data/draft.ipynb
+data/download_dataset.sh 
+data/readme.md 
+github_tips.md 
+model/SSIT/preprocess_embedings.py 
+preprocess_embedings_draft.ipynb 
+wandb/
+Classifier/
+checkpoints/
 model/checkpoints
 model/SSIT/ssit_draft.ipynb
 dr_clf/
