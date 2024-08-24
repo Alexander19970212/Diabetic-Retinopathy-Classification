@@ -14,7 +14,8 @@ from torchvision import transforms
 from PIL import Image, ImageFilter, ImageOps
 from torchvision.transforms import functional as F
 
-datasets_info = {"DDR": {"dataset_name": "DDR-dataset", "folder_prefix": "DR_grading"}}
+datasets_info = {"DDR": {"dataset_name": "DDR-dataset", "folder_prefix": "DR_grading"},
+                 "EyePacs": {"dataset_name": "EyePacs_dataset", "folder_prefix": "EyePacs_grading"}}
 # dataset_root_dir = "data/local_datasets"
 
 mean = [0.425753653049469, 0.29737451672554016, 0.21293757855892181]  # eyepacs mean

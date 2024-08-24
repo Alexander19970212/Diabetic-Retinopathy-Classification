@@ -62,6 +62,9 @@ class Classifier(PreTrainedModel):
         else:
             input_head_size = backbone_options[config.backbone_name]["feature_length"]
 
+        print(input_head_size)
+        print(config.num_classes)
+
         self.head = nn.Linear(input_head_size, config.num_classes)
     
     def save_backbone_checkpoint(self, checkpoint_path):
