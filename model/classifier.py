@@ -50,7 +50,8 @@ class Classifier(PreTrainedModel):
         self.model = backbone_options[config.backbone_name]["model"](pretrained=True)
         self.model.fc = nn.Identity()
 
-        if config.external_embedings:
+        if self.external_embedings:
+            print("External embedings are used")
             emd_chs = config.external_embedings_len * 2 if self.feat_concat else config.external_embedings_len
             input_head_size = backbone_options[config.backbone_name]["feature_length"]+emd_chs
             self.fc_norm = nn.LayerNorm(emd_chs) if config.use_fc_norm else nn.Identity()
@@ -61,9 +62,6 @@ class Classifier(PreTrainedModel):
                 param.requires_grad = False
         else:
             input_head_size = backbone_options[config.backbone_name]["feature_length"]
-
-        print(input_head_size)
-        print(config.num_classes)
 
         self.head = nn.Linear(input_head_size, config.num_classes)
     
