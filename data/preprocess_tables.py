@@ -62,6 +62,9 @@ def main():
 
         new_dataset = {"image_path": new_image_paths, "label": new_labels}
         new_dataset = pd.DataFrame().from_dict(new_dataset)
+        print("Len before removing unnecessary class: ", new_dataset.shape)
+        new_dataset = new_dataset[new_dataset.label < 5]
+        print("Len after removing unnecessary class: ", new_dataset.shape)
         new_dataset.to_csv(output_filename)
 
 if __name__ == '__main__':
