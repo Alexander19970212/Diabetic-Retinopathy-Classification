@@ -1,4 +1,6 @@
 # main for train
+import os
+os.environ["CUDA_VISIBLE_DEVICES"]="1" # is need to train on 'hachiko'
 import argparse
 import sys
 sys.path.append('model')
@@ -40,7 +42,8 @@ if __name__ == '__main__':
     parser.add_argument('--backbone_name', default="resnet50")
     parser.add_argument('--num_classes', type=int, default=5)
     parser.add_argument('--input_size', default=224)
-    parser.add_argument('--pretrained', default=True)
+    parser.add_argument('--pretrained', default=True, action="store_true")
+    parser.add_argument('--only_ssit_embds', default=False, action="store_true")
     parser.add_argument('--external_embedings', default=False, action="store_true")
     parser.add_argument('--external_embedings_len', default=384)
     parser.add_argument('--feat_concat', default=True, action="store_true")
@@ -56,6 +59,7 @@ if __name__ == '__main__':
         num_classes = args.num_classes,
         input_size = args.input_size,
         pretrained = args.pretrained,
+        only_ssit_embds = args.only_ssit_embds,
         external_embedings = args.external_embedings,
         external_embedings_len = args.external_embedings_len,
         emb_model_checkpoint = args.emb_model_checkpoint,
