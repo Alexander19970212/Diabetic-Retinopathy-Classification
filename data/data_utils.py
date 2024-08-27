@@ -70,7 +70,6 @@ class TransformWithMask(object):
         jitter_param = (data_aug['brightness'], data_aug['contrast'], data_aug['saturation'], data_aug['hue'])
         degree = data_aug['degrees']
         self.train_transforms = train_transfroms
-
         if train_transfroms:
             self.resized_crop = transforms.RandomResizedCrop(input_size, scale=scale)
             self.color_jitter = transforms.RandomApply([transforms.ColorJitter(*jitter_param)], p=0.8)

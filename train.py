@@ -6,6 +6,9 @@ import sys
 sys.path.append('model')
 sys.path.append('model/SSIT')
 
+import torch
+torch.cuda.empty_cache()
+
 from model.classifier import ClfConfig, Classifier
 from utils import train, test
 from data.data_utils import build_datasets
@@ -41,13 +44,13 @@ if __name__ == '__main__':
     parser.add_argument('--saved_model_dir', default="model/checkpoints")
     parser.add_argument('--backbone_name', default="resnet50")
     parser.add_argument('--num_classes', type=int, default=5)
-    parser.add_argument('--input_size', default=224)
+    parser.add_argument('--input_size', type=int, default=224)
     parser.add_argument('--pretrained', default=True, action="store_true")
     parser.add_argument('--only_ssit_embds', default=False, action="store_true")
     parser.add_argument('--external_embedings', default=False, action="store_true")
     parser.add_argument('--external_embedings_len', default=384)
     parser.add_argument('--feat_concat', default=True, action="store_true")
-    parser.add_argument('--save_backbone', default=True, action="store_true")
+    parser.add_argument('--save_backbone', default=False, action="store_true")
     parser.add_argument('--load_backbone', default=False, action="store_true")
     parser.add_argument('--backbone_checkpoint_path_load', default="model/checkpoints/resnet50_backbone.pt")
     parser.add_argument('--dataset_name', default="DDR")
