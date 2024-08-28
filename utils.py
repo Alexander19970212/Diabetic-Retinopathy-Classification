@@ -15,6 +15,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import evaluate
 
+from tqdm import tqdm
+import json
+
 # Load accuracy evaluator
 accuracy = evaluate.load("accuracy")
 
@@ -244,8 +247,42 @@ def train(model, train_dataset, valid_dataset, test_dataset, args):
 
     return model
 
-def test(model, train_dataset, valid_dataset, test_dataset, args):
+def test(model, test_dataset, train_dataset, valid_dataset, args, device):
+    """
     trainer = build_trainer(model, train_dataset, valid_dataset, args, train_mode=False)
     metrics = trainer.evaluate(test_dataset)
-    trainer.log_metrics("eval", metrics)
-    trainer.save_metrics("eval", metrics)
+    trainer.log_metrics("test", metrics)
+    trainer.save_metrics("test", metrics)
+    """
+    
+    cm_path = f'{args.plots_path}/{args.run_name}.png'
+    compute_metrics_f = get_compute_metrics(args.num_classes, save_cm=True, cm_path=cm_path)
+
+    n_chunks = len(test_dataset)//args.batch_size
+    if len(test_dataset)%args.batch_size > 0:
+        n_chunks += 1
+
+    splited_dataframe = np.array_split(np.arange(len(test_dataset)), n_chunks)
+
+    all_logits = []
+    all_labels = []
+
+    model.model.eval()
+    with torch.no_grad():
+        for batch_ids in tqdm(splited_dataframe):
+            batch = test_dataset[batch_ids]
+            pixel_values = torch.stack([x for x in batch['pixel_values']]).to(device)
+            labels = torch.tensor([x for x in batch['label']])
+    
+            logits = model.forward(pixel_values=pixel_values)["logits"]
+            all_logits.append(logits.to('cpu'))
+            all_labels.append(labels)
+
+    logits = torch.cat(all_logits)
+    labels = torch.cat(all_labels)
+
+    metrics = compute_metrics_f((logits, labels))
+    print(metrics)
+    
+    with open(f'{args.plots_path}/{args.run_name}.json', 'w') as fp:
+        json.dump(metrics, fp)

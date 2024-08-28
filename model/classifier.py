@@ -79,8 +79,9 @@ class Classifier(PreTrainedModel):
                 nn.Linear(512, 128),
                 # nn.BatchNorm1d(num_features = 128),
                 nn.ReLU(),
-                nn.Linear(128, config.num_classes),
-                nn.Softmax())
+                nn.Linear(128, config.num_classes)
+                # nn.Softmax()
+                )
 
         # nn.Linear(input_head_size, config.num_classes)
     
@@ -104,6 +105,7 @@ class Classifier(PreTrainedModel):
 
     def forward(self, pixel_values, labels=None):
         # define function in transformers library maner
+        # print("PPV: ", pixel_values)
         if self.only_ssit_embds == False:
             features = self.model(pixel_values)
         if self.external_embedings:

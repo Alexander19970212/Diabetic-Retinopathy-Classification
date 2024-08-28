@@ -15,6 +15,9 @@ model/checkpoints
 model/SSIT/ssit_draft.ipynb
 dr_clf/
 src/
+data/.saliency_detect.py.swo
+data/.saliency_detect.py.swp
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

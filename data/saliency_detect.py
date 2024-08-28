@@ -58,8 +58,11 @@ def main():
     print('Loading tasks...')
     for folder, _, imgs in os.walk(args.image_folder):
         folder = Path(folder)
+        print(folder)
         subfolders = folder.relative_to(image_folder)
+        print(subfolders)
         output_folder = output_folder.joinpath(subfolders)
+        print(output_folder)
         output_folder.mkdir(parents=True, exist_ok=True)
 
         if args.visualize_folder:
