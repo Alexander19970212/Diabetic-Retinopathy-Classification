@@ -225,7 +225,7 @@ def build_trainer(model, train_dataset, valid_dataset, args, train_mode=True):
 
     return trainer
 
-def train(model, train_dataset, valid_dataset, args):
+def train(model, train_dataset, valid_dataset, test_dataset, args):
     
     trainer = build_trainer(model, train_dataset, valid_dataset, args, train_mode=True)
     train_results = trainer.train()
@@ -236,6 +236,11 @@ def train(model, train_dataset, valid_dataset, args):
         trainer.save_metrics("train", train_results.metrics)
         trainer.save_state()
         model.save_pretrained(f"{args.saved_model_dir}/{args.run_name}", from_pt=True)
+
+    if args.test_after_train:
+        metrics = trainer.evaluate(test_dataset)
+        trainer.log_metrics("test", metrics)
+        trainer.save_metrics("test", metrics)
 
     return model
 
