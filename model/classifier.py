@@ -4,9 +4,20 @@ import torchvision
 from transformers import PretrainedConfig
 from transformers import PreTrainedModel
 from SSIT.ssit_models import SSitEncoder
+from MedViT import MedViT, MedViT_large
 
 backbone_options = {
-    "resnet50": {"model": torchvision.models.resnet50, "feature_length":  2048}
+    "resnet50": {"model": torchvision.models.resnet50, 
+                 "feature_length":  2048, 
+                 "output_type": "features",
+                 "cut_layers": ["fc"],
+                 "params": {"pretrained": True}},
+    "MedViT": {"model": MedViT_large,
+               "feature_length": 1024,
+               "output_type": "features",
+               "cut_layers": ["proj_head"],
+               "pretrained_cfg": 'model/checkpoints/MedViT_large_im1k.pth',
+               "params": {"use_checkpoint": False}}
 }
 
 class ClfConfig(PretrainedConfig):
@@ -51,10 +62,21 @@ class Classifier(PreTrainedModel):
         self.external_embedings = config.external_embedings
         self.feat_concat = config.feat_concat
         self.global_pool = config.global_pool
+
+        self.backbone_type = backbone_options[config.backbone_name]["output_type"]
         
         if self.only_ssit_embds != True:
-            self.model = backbone_options[config.backbone_name]["model"](pretrained=True)
-            self.model.fc = nn.Identity()
+            self.model = backbone_options[config.backbone_name]["model"](**backbone_options[config.backbone_name]["params"])
+            
+            if "pretrained_cfg" in backbone_options[config.backbone_name].keys():
+                self.model.load_state_dict(torch.load(backbone_options[config.backbone_name]["pretrained_cfg"],
+                                                 weights_only=True)['model'])
+
+            self.remove_head(backbone_options[config.backbone_name]["cut_layers"])
+            #coped_layers = (list(model.children())[:-backbone_options[config.backbone_name]["cut_id"]])
+            #coped_layers.append(nn.Flatten())
+            #self.model = torch.nn.Sequential(*coped_layers)
+            # self.model.fc = torch.nn.Identity() 
 
         if self.external_embedings:
             print("External embedings are used")
@@ -84,6 +106,13 @@ class Classifier(PreTrainedModel):
                 )
 
         # nn.Linear(input_head_size, config.num_classes)
+
+    def remove_head(self, cut_layers):
+        for cut_layer_name in cut_layers:
+            if cut_layer_name == "fc":
+                self.model.fc = torch.nn.Identity()
+            elif cut_layer_name == "proj_head":
+                self.model.proj_head = torch.nn.Identity()
     
     def save_backbone_checkpoint(self, checkpoint_path):
         torch.save(self.model.state_dict(), checkpoint_path)
@@ -107,7 +136,12 @@ class Classifier(PreTrainedModel):
         # define function in transformers library maner
         # print("PPV: ", pixel_values)
         if self.only_ssit_embds == False:
-            features = self.model(pixel_values)
+            if self.backbone_type == "features":
+                features = self.model(pixel_values)
+            elif self.backbone_type == "embedings":
+                bb_embedings = self.model(pixel_values)
+                features = self.concat_embedings(bb_embedings)
+                
         if self.external_embedings:
             embedings = self.embd_model(pixel_values)
             embedings = self.concat_embedings(embedings)

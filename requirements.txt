@@ -15,3 +15,5 @@ evaluate
 accelerate
 wandb
 jupyter
+albumentations
+einops

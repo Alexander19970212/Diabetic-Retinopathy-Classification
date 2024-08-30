@@ -3,12 +3,14 @@ import os
 
 from torchvision import transforms
 from datasets import Dataset
-
+import cv2
 import random
 
 import numpy as np
 import torch
 from torchvision import transforms
+import albumentations as A
+from albumentations.pytorch import ToTensorV2
 # from torch.utils.data import Dataset
 # from datasets import Dataset
 from PIL import Image, ImageFilter, ImageOps
@@ -18,8 +20,12 @@ datasets_info = {"DDR": {"dataset_name": "DDR-dataset", "folder_prefix": "DR_gra
                  "EyePacs": {"dataset_name": "EyePacs_dataset", "folder_prefix": "EyePacs_grading"}}
 # dataset_root_dir = "data/local_datasets"
 
-mean = [0.425753653049469, 0.29737451672554016, 0.21293757855892181]  # eyepacs mean
-std = [0.27670302987098694, 0.20240527391433716, 0.1686241775751114]  # eyepacs std
+# mean = [0.425753653049469, 0.29737451672554016, 0.21293757855892181]  # eyepacs mean
+# std = [0.27670302987098694, 0.20240527391433716, 0.1686241775751114]  # eyepacs std
+
+mean = [0.4143788,  0.25651503, 0.12490026]
+std = [0.29622576, 0.20603535, 0.14079799]
+
 data_aug = {
     'brightness': 0.4,
     'contrast': 0.4,
@@ -179,9 +185,12 @@ def resample(_dataset, ratio = 3):
 
 
 def pil_loader(img_path):
-    with open(img_path, 'rb') as f:
-        img = Image.open(f)
-        return img.convert('RGB')
+    
+    # with open(img_path, 'rb') as f:
+        # img = Image.open(f)
+        # return img.convert('RGB')
+
+    return cv2.imread(img_path)
 
 def npy_loader(mask_path):
     with open(mask_path, 'rb') as f:
@@ -196,19 +205,36 @@ def get_func_transform(input_size, train_mode=True):
         """
         # pre-augmentation and preprocessing
         if train_mode:
-            transform = TransformWithMask(input_size, mean, std, data_aug, train_transfroms=True)
+            # transform = TransformWithMask(input_size, mean, std, data_aug, train_transfroms=True)
+            transform = A.Compose([
+                A.RandomResizedCrop(size = (input_size, input_size), scale=(0.87, 1), ratio=(0.7, 1.3), interpolation=cv2.INTER_LANCZOS4),
+                A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.1, hue=0.1),
+                # A.Resize(height=input_size, width=input_size, interpolation=cv2.INTER_LANCZOS4, p=1),
+                A.HorizontalFlip(p=0.5),
+                A.VerticalFlip(p=0.5),
+                A.Rotate(limit=(-180, 180), interpolation=cv2.INTER_LANCZOS4),
+                # A.ShiftScaleRotate(p=0.5)
+                A.Affine(translate_px=10, interpolation=cv2.INTER_LANCZOS4),
+                A.Normalize(mean=mean, std=std),
+                ToTensorV2()
+            ])
         else:
-            transform = TransformWithMask(input_size, mean, std, data_aug, train_transfroms=False)
+            # transform = TransformWithMask(input_size, mean, std, data_aug, train_transfroms=False)
+            transform = A.Compose([
+                A.Resize(height=input_size, width=input_size, interpolation=cv2.INTER_LANCZOS4, p=1),
+                A.Normalize(mean=mean, std=std),
+                ToTensorV2()
+            ])
 
         images = []
         masks = []
         
         for img_path, mask_path in zip(examples['image'], examples['mask_image']):
             img = pil_loader(img_path)
-            mask = npy_loader(mask_path)
-            mask = Image.fromarray(np.uint8(mask*255))
-            img, mask = transform(img, mask)
-
+            mask = npy_loader(mask_path)*255
+            # mask = Image.fromarray(np.uint8(mask*255))
+            transformed = transform(image = img, mask = mask)
+            img, mask = transformed['image'], transformed['mask']
             images.append(img)
             masks.append(mask)
 

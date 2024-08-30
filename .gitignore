@@ -17,7 +17,7 @@ dr_clf/
 src/
 data/.saliency_detect.py.swo
 data/.saliency_detect.py.swp
-
+data/.data_utils.py.swp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

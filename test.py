@@ -5,6 +5,7 @@ import argparse
 import sys
 sys.path.append('model')
 sys.path.append('model/SSIT')
+sys.path.append('model/MedViT')
 
 import torch
 torch.cuda.empty_cache()
