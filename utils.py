@@ -167,6 +167,7 @@ def get_collate_fn(with_embedings=False):
     def collate_fn(batch):
         collated_batch = {
             'pixel_values': torch.stack([x['pixel_values'] for x in batch]),
+            'pixel_values2': torch.stack([x['pixel_values2'] for x in batch]),
             'labels': torch.tensor([x['label'] for x in batch])
         }
         if with_embedings:
@@ -202,8 +203,8 @@ def build_trainer(model, train_dataset, valid_dataset, args, train_mode=True):
         num_train_epochs=args.num_train_epochs, #15,
         warmup_ratio=args.warmup_ratio, #0.02,
         
-        metric_for_best_model=args.metric_for_best_model, #"kappa", # select the best model via metric kappa
-        greater_is_better = True,
+        # metric_for_best_model=args.metric_for_best_model, #"kappa", # select the best model via metric kappa
+        greater_is_better = False,
         load_best_model_at_end=True,
         
         push_to_hub=False

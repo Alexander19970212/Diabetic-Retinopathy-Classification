@@ -198,7 +198,7 @@ def npy_loader(mask_path):
         img = np.load(f)
         return img
 
-def get_func_transform(input_size, train_mode=True):
+def get_func_transform(input_size, input_size2=None, train_mode=True):
     def f_transform(examples):
         """
         The function is used to preprocess train dataset.
@@ -206,41 +206,66 @@ def get_func_transform(input_size, train_mode=True):
         # pre-augmentation and preprocessing
         if train_mode:
             # transform = TransformWithMask(input_size, mean, std, data_aug, train_transfroms=True)
+            resize_transform = A.RandomResizedCrop(size = (input_size, input_size), scale=(0.87, 1), ratio=(0.7, 1.3), interpolation=cv2.INTER_LANCZOS4)
             transform = A.Compose([
-                A.RandomResizedCrop(size = (input_size, input_size), scale=(0.87, 1), ratio=(0.7, 1.3), interpolation=cv2.INTER_LANCZOS4),
-                A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.1, hue=0.1),
-                # A.Resize(height=input_size, width=input_size, interpolation=cv2.INTER_LANCZOS4, p=1),
+                A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.1, hue=0.1, p=0.8),
                 A.HorizontalFlip(p=0.5),
                 A.VerticalFlip(p=0.5),
                 A.Rotate(limit=(-180, 180), interpolation=cv2.INTER_LANCZOS4),
+                A.AdvancedBlur(sigma_x_limit=(0.1, 2.0), sigma_y_limit=(0.1, 2.0), p=0.7),
+                # A.RandomBrightnessContrast(p=0.5),
                 # A.ShiftScaleRotate(p=0.5)
                 A.Affine(translate_px=10, interpolation=cv2.INTER_LANCZOS4),
-                A.Normalize(mean=mean, std=std),
-                ToTensorV2()
             ])
         else:
             # transform = TransformWithMask(input_size, mean, std, data_aug, train_transfroms=False)
-            transform = A.Compose([
-                A.Resize(height=input_size, width=input_size, interpolation=cv2.INTER_LANCZOS4, p=1),
-                A.Normalize(mean=mean, std=std),
-                ToTensorV2()
-            ])
+            resize_transform = A.Resize(height=input_size, width=input_size, interpolation=cv2.INTER_LANCZOS4, p=1)
+
+        if input_size2 != None:
+            if train_mode:
+                resize_transform2 = A.RandomResizedCrop(size = (input_size2, input_size2), scale=(0.87, 1), ratio=(0.7, 1.3), interpolation=cv2.INTER_LANCZOS4)
+            else:
+                resize_transform2 = A.Resize(height=input_size2, width=input_size2, interpolation=cv2.INTER_LANCZOS4, p=1)
+
+        normalization = A.Compose([
+            A.Normalize(mean=mean, std=std),
+            ToTensorV2()])
+        
 
         images = []
         masks = []
+        images2 = []
+        masks2 = []
         
         for img_path, mask_path in zip(examples['image'], examples['mask_image']):
-            img = pil_loader(img_path)
-            mask = npy_loader(mask_path)*255
-            # mask = Image.fromarray(np.uint8(mask*255))
-            transformed = transform(image = img, mask = mask)
+            img_init = pil_loader(img_path)
+            mask_init = npy_loader(mask_path)*255
+            transformed = resize_transform(image=img_init, mask = mask_init)
+            if train_mode:
+                transformed = transform(**transformed)
+            transformed = normalization(**transformed)
             img, mask = transformed['image'], transformed['mask']
             images.append(img)
             masks.append(mask)
 
+            if input_size2 != None:
+                transformed2 = resize_transform2(image=img_init, mask=mask_init)
+                if train_mode:
+                    transformed2 = transform(**transformed2)
+                transformed2 = normalization(**transformed2)
+                img2, mask2 = transformed2['image'], transformed2['mask']
+                images2.append(img2)
+                masks2.append(mask2)
+
+            else:
+                images2.append(img)
+                masks2.append(mask)
+
         inputs = {}
         inputs['pixel_values'] = images
+        inputs['pixel_values2'] = images2
         inputs['mask'] = masks
+        inputs['mask2'] = masks2
         inputs['label'] = examples['label']
         
         return inputs
@@ -251,11 +276,13 @@ def get_func_transform(input_size, train_mode=True):
 def collate_fn(batch):
     return {
         'pixel_values': torch.stack([x['pixel_values'] for x in batch]),
+        'pixel_values2': torch.stack([x['pixel_values2'] for x in batch]),
         'masks': torch.stack([x['mask'] for x in batch]),
+        'masks2': torch.stack([x['mask2'] for x in batch]),
         'labels': torch.tensor([x['label'] for x in batch])
     }
 
-def build_datasets(dataset_name, dataset_root_dir, input_size=224):
+def build_datasets(dataset_name, dataset_root_dir, input_size=224, input_size2=None):
     subset_names = ["test", "train", "valid"]
     subsets = []
     for subset_name in subset_names:
@@ -277,9 +304,9 @@ def build_datasets(dataset_name, dataset_root_dir, input_size=224):
             print("Train subset resampling ...")
             labelsTable = resample(labelsTable, ratio = 35)
             # random trainsforms with mask
-            func_transform = get_func_transform(input_size, train_mode=True)
+            func_transform = get_func_transform(input_size, input_size2, train_mode=True)
         else:
-            func_transform = get_func_transform(input_size, train_mode=False)
+            func_transform = get_func_transform(input_size, input_size2, train_mode=False)
 
         # to Dataset
         dataset = Dataset.from_pandas(labelsTable, preserve_index=False)

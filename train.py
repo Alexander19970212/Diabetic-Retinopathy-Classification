@@ -32,7 +32,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataloader_num_workers', default=16)
     parser.add_argument('--lr_scheduler_type', default="linear")
     parser.add_argument('--learning_rate', default=2e-5)
-    parser.add_argument('--batch_size', default=16)
+    parser.add_argument('--batch_size', default=4)
     parser.add_argument('--gradient_accumulation_steps', default=4)
     parser.add_argument('--num_train_epochs', type=int, default=15)
     parser.add_argument('--warmup_ratio', default=0.02)
@@ -46,6 +46,7 @@ if __name__ == '__main__':
     parser.add_argument('--backbone_name', default="resnet50")
     parser.add_argument('--num_classes', type=int, default=5)
     parser.add_argument('--input_size', type=int, default=224)
+    parser.add_argument('--input_size2', type=int, default=224)
     parser.add_argument('--pretrained', default=True, action="store_true")
     parser.add_argument('--only_ssit_embds', default=False, action="store_true")
     parser.add_argument('--external_embedings', default=False, action="store_true")
@@ -73,7 +74,10 @@ if __name__ == '__main__':
     if args.load_backbone:
        model.load_backbone_checkpoint(args.backbone_checkpoint_path_load)
 
-    test_dataset, train_dataset, valid_dataset = build_datasets(args.dataset_name, args.dataset_root_dir, input_size=args.input_size)
+    test_dataset, train_dataset, valid_dataset = build_datasets(args.dataset_name,
+            args.dataset_root_dir,
+            input_size=args.input_size,
+            input_size2=args.input_size2)
 
     model = train(model, train_dataset, valid_dataset, test_dataset, args)
 

@@ -132,14 +132,14 @@ class Classifier(PreTrainedModel):
         x = self.pre_logits(x)
         return x
 
-    def forward(self, pixel_values, labels=None):
+    def forward(self, pixel_values, pixel_values2, labels=None):
         # define function in transformers library maner
         # print("PPV: ", pixel_values)
         if self.only_ssit_embds == False:
             if self.backbone_type == "features":
-                features = self.model(pixel_values)
+                features = self.model(pixel_values2)
             elif self.backbone_type == "embedings":
-                bb_embedings = self.model(pixel_values)
+                bb_embedings = self.model(pixel_values2)
                 features = self.concat_embedings(bb_embedings)
                 
         if self.external_embedings:
