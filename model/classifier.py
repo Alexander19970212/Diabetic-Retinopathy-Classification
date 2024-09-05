@@ -45,6 +45,7 @@ class AttentionHead(nn.Module):
 
         # replace it with your best classifier
         self.classifier = nn.Linear(features_dim, num_classes)
+        self.norm = nn.LayerNorm(features_dim)
 
         # self.classifier = nn.Sequential(
         #         nn.Linear(features_dim, 512),
@@ -58,16 +59,13 @@ class AttentionHead(nn.Module):
 
         ext_features = self.projector(ext_features) if ext_features is not None else features
 
-        # attn, _ = self.self_attn(
-        #     ext_features, features, features,         # query, key, value
-        #     attn_mask=None, key_padding_mask=None
-        # )
-
-        attn = features
+        attn, _ = self.self_attn(
+            ext_features, features, features,         # query, key, value
+            attn_mask=None, key_padding_mask=None
+        )
 
         # classify the output
-        return self.classifier(attn)
-
+        return self.classifier(self.norm(features + attn))
 
 
 class ClfConfig(PretrainedConfig):
@@ -154,7 +152,7 @@ class Classifier(PreTrainedModel):
                                 num_heads=4,
                                 # apply_encoder=config.apply_encoder,
                                 # inner_dim=512,
-                                dropout=0.1
+                                dropout=0.2
                                 )
 
         # TODO: create flag
