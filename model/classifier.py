@@ -67,7 +67,8 @@ class AttentionHead(nn.Module):
 
     def forward(self, features, ext_features=None):
 
-        ext_features = self.projector(ext_features) if ext_features is not None else features
+        ext_features = features
+        # ext_features = self.projector(ext_features) if ext_features is not None else features
 
         attn, _ = self.self_attn(
             features, ext_features, features,         # query, key, value
@@ -145,7 +146,7 @@ class Classifier(PreTrainedModel):
             #coped_layers = (list(model.children())[:-backbone_options[config.backbone_name]["cut_id"]])
             #coped_layers.append(nn.Flatten())
             #self.model = torch.nn.Sequential(*coped_layers)
-            # self.model.fc = torch.nn.Identity() 
+            # self.model.fc = torch.nn.Identity()
 
         if self.external_embedings:
             print("External embedings are used")
@@ -165,13 +166,18 @@ class Classifier(PreTrainedModel):
             input_head_size = backbone_options[config.backbone_name]["feature_length"]
 
         self.head = AttentionHead(num_classes=config.num_classes,
-                                features_dim=backbone_options[config.backbone_name]["feature_length"],
+                                # features_dim=backbone_options[config.backbone_name]["feature_length"], !!
+                                features_dim=input_head_size,
                                 ext_features_dim=emd_chs,
                                 num_heads=4,
                                 apply_encoder=config.apply_encoder,
                                 inner_dim=512,
                                 dropout=0.1
                                 )
+
+        # TODO: create flag
+        for param in self.model.parameters():
+            param.requires_grad = False
 
         # self.head = nn.Sequential(
         #         nn.Linear(input_head_size, 512),
@@ -225,15 +231,15 @@ class Classifier(PreTrainedModel):
             embedings = self.embd_model(pixel_values)
             embedings = self.concat_embedings(embedings)
             if self.only_ssit_embds:
-                # features = embedings
-                logits = self.head(embedings)
+                features = embedings
+                # logits = self.head(embedings)
             else:
-                # features = torch.cat((features, embedings), dim=1)
-                logits = self.head(features, embedings)
-        else:
-            logits = self.head(features)
+                features = torch.cat((features, embedings), dim=1)
+                # logits = self.head(features, embedings)
+        # else:
+        #     logits = self.head(features)
         
-        # logits = self.head(features)
+        logits = self.head(features)
 
         if labels is not None:
             loss = torch.nn.functional.cross_entropy(logits, labels)
