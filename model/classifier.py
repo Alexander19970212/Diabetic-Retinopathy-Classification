@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torchvision
 from transformers import PretrainedConfig
 from transformers import PreTrainedModel
@@ -20,6 +21,72 @@ backbone_options = {
                "params": {"use_checkpoint": False}}
 }
 
+class AttentionHead(nn.Module):
+    # based on MultiHeadAttention: https://pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html
+
+    def __init__(self, num_classes, features_dim, ext_features_dim=None, num_heads=4, apply_encoder=True, inner_dim=512, dropout=0.1):
+        '''
+        num_classes: the number of classes in the dataset
+
+        features_dim: the number of expected features in the input (from MedViT)
+        ext_features_dim: the number of expected features in the external input (from SSiT) (if None, no external input)
+
+        num_heads: the number of heads in the multiheadattention models (play with this, 4 or 8 would be a good start)
+
+        apply_encoder: apply transformer encoder layer (True) or not (False) on top of the MultiHeadAttention layer
+        inner_dim: the dimension of the feedforward network model (should be 2x or 4x features_dim) (for the Encoder layer only)
+        '''
+        super().__init__()
+        self.self_attn = nn.MultiheadAttention(
+            features_dim, num_heads, dropout=dropout
+        )
+        # project external (SSiT) features to the same dimension as the input (MedViT) features
+        self.projector = nn.Linear(ext_features_dim, features_dim) if ext_features_dim is not None else nn.Identity()
+        self.classifier = nn.Linear(features_dim, num_classes) # replace it with your best classifier
+
+        # self.classifier = nn.Sequential(
+        #         nn.Linear(features_dim, 512),
+        #         nn.ReLU(),
+        #         nn.Linear(512, 128),
+        #         nn.ReLU(),
+        #         nn.Linear(128, num_classes)
+        #         )
+
+        # Transformer Encoder Layer (optional)
+        self.encoder = apply_encoder # flag
+
+        self.linear1 = nn.Linear(features_dim, inner_dim)
+        self.linear2 = nn.Linear(inner_dim, features_dim)
+
+        self.norm1 = nn.LayerNorm(features_dim)
+        self.norm2 = nn.LayerNorm(features_dim)
+
+        self.dropout = nn.Dropout(dropout)
+        self.dropout1 = nn.Dropout(dropout)
+        self.dropout2 = nn.Dropout(dropout)
+
+    def forward(self, features, ext_features=None):
+
+        ext_features = self.projector(ext_features) if ext_features is not None else features
+
+        attn, _ = self.self_attn(
+            features, ext_features, features,         # query, key, value
+            attn_mask=None, key_padding_mask=None
+        )
+
+        if self.encoder: # apply transformer encoder on top of the MultiHeadAttention layer
+            features = features + self.dropout1(attn)
+            features = self.norm1(features)
+            attn = self.linear2(self.dropout(F.relu(self.linear1(features))))
+            features = features + self.dropout2(attn)
+            features = self.norm2(features)
+
+            attn = features
+
+        # classify the output
+        return self.classifier(attn)
+
+
 class ClfConfig(PretrainedConfig):
     model_type = "clf"
 
@@ -32,6 +99,7 @@ class ClfConfig(PretrainedConfig):
         only_ssit_embds = False,
         external_embedings = False,
         external_embedings_len = 384,
+        apply_encoder = False,
         emb_model_checkpoint = '../checkpoints/pretrained_vits_imagenet_initialized.pt',
         feat_concat = True,
         **kwargs
@@ -46,6 +114,7 @@ class ClfConfig(PretrainedConfig):
         self.only_ssit_embds = only_ssit_embds
         self.external_embedings = external_embedings
         self.external_embedings_len = external_embedings_len
+        self.apply_encoder = apply_encoder
         self.emb_model_checkpoint = emb_model_checkpoint
 
         self.feat_concat = feat_concat
@@ -92,18 +161,28 @@ class Classifier(PreTrainedModel):
             for param in self.embd_model.parameters():
                 param.requires_grad = False
         else:
+            emd_chs = None
             input_head_size = backbone_options[config.backbone_name]["feature_length"]
 
-        self.head = nn.Sequential(
-                nn.Linear(input_head_size, 512),
-                # nn.BatchNorm1d(num_features = 512),
-                nn.ReLU(),
-                nn.Linear(512, 128),
-                # nn.BatchNorm1d(num_features = 128),
-                nn.ReLU(),
-                nn.Linear(128, config.num_classes)
-                # nn.Softmax()
-                )
+        self.head = AttentionHead(num_classes=config.num_classes,
+                                features_dim=backbone_options[config.backbone_name]["feature_length"],
+                                ext_features_dim=emd_chs,
+                                num_heads=4,
+                                apply_encoder=config.apply_encoder,
+                                inner_dim=512,
+                                dropout=0.1
+                                )
+
+        # self.head = nn.Sequential(
+        #         nn.Linear(input_head_size, 512),
+        #         # nn.BatchNorm1d(num_features = 512),
+        #         nn.ReLU(),
+        #         nn.Linear(512, 128),
+        #         # nn.BatchNorm1d(num_features = 128),
+        #         nn.ReLU(),
+        #         nn.Linear(128, config.num_classes)
+        #         # nn.Softmax()
+        #         )
 
         # nn.Linear(input_head_size, config.num_classes)
 
@@ -146,11 +225,15 @@ class Classifier(PreTrainedModel):
             embedings = self.embd_model(pixel_values)
             embedings = self.concat_embedings(embedings)
             if self.only_ssit_embds:
-                features = embedings
+                # features = embedings
+                logits = self.head(embedings)
             else:
-                features = torch.cat((features, embedings), dim=1)
-
-        logits = self.head(features)
+                # features = torch.cat((features, embedings), dim=1)
+                logits = self.head(features, embedings)
+        else:
+            logits = self.head(features)
+        
+        # logits = self.head(features)
 
         if labels is not None:
             loss = torch.nn.functional.cross_entropy(logits, labels)

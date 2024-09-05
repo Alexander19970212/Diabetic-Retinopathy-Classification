@@ -32,7 +32,7 @@ if __name__ == '__main__':
     parser.add_argument('--dataloader_num_workers', default=16)
     parser.add_argument('--lr_scheduler_type', default="linear")
     parser.add_argument('--learning_rate', default=2e-5)
-    parser.add_argument('--batch_size', default=4)
+    parser.add_argument('--batch_size', default=16)
     parser.add_argument('--gradient_accumulation_steps', default=4)
     parser.add_argument('--num_train_epochs', type=int, default=15)
     parser.add_argument('--warmup_ratio', default=0.02)
@@ -52,6 +52,7 @@ if __name__ == '__main__':
     parser.add_argument('--external_embedings', default=False, action="store_true")
     parser.add_argument('--external_embedings_len', default=384)
     parser.add_argument('--feat_concat', default=True, action="store_true")
+    parser.add_argument('--apply_encoder', default=False, action="store_true")
     parser.add_argument('--save_backbone', default=False, action="store_true")
     parser.add_argument('--load_backbone', default=False, action="store_true")
     parser.add_argument('--backbone_checkpoint_path_load', default="model/checkpoints/resnet50_backbone.pt")
@@ -68,6 +69,7 @@ if __name__ == '__main__':
         external_embedings = args.external_embedings,
         external_embedings_len = args.external_embedings_len,
         emb_model_checkpoint = args.emb_model_checkpoint,
+        apply_encoder = args.apply_encoder,
         feat_concat = args.feat_concat)
     model = Classifier(model_config)
 
