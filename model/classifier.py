@@ -58,10 +58,12 @@ class AttentionHead(nn.Module):
 
         ext_features = self.projector(ext_features) if ext_features is not None else features
 
-        attn, _ = self.self_attn(
-            ext_features, features, features,         # query, key, value
-            attn_mask=None, key_padding_mask=None
-        )
+        # attn, _ = self.self_attn(
+        #     ext_features, features, features,         # query, key, value
+        #     attn_mask=None, key_padding_mask=None
+        # )
+
+        attn = features
 
         # classify the output
         return self.classifier(attn)
