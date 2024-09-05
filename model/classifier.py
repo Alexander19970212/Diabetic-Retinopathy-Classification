@@ -24,7 +24,39 @@ backbone_options = {
 class AttentionHead(nn.Module):
     # based on MultiHeadAttention: https://pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html
 
-    def __init__(self, num_classes, features_dim, ext_features_dim=None, num_heads=4, dropout=0.1):
+    class CrossAttention(nn.Module):
+        def __init__(self, features_dim, ext_features_dim, num_heads=4, dropout=0.2):
+            super().__init__()
+            self.attention = nn.MultiheadAttention(
+                features_dim, num_heads, dropout=dropout
+            )
+
+            self.attention_ext = nn.MultiheadAttention(
+                ext_features_dim, num_heads, dropout=dropout
+            )
+
+            self.norm1 = nn.LayerNorm(features_dim)
+            self.norm2 = nn.LayerNorm(ext_features_dim)
+
+            if ext_features_dim != features_dim:
+                self.projector = nn.Linear(ext_features_dim, features_dim)
+                self.projector_ext = nn.Linear(features_dim, ext_features_dim)
+
+        def forward(self, features, ext_features):
+            attn, _ = self.attention(
+                F.relu(self.projector(ext_features)), features, features,           # query, key, value
+                attn_mask=None, key_padding_mask=None
+            )
+
+            attn_ext, _ = self.attention_ext(
+                F.relu(self.projector_ext(features)), ext_features, ext_features,   # query, key, value
+                attn_mask=None, key_padding_mask=None
+            )
+
+            return torch.cat((self.norm1(features + attn), self.norm2(ext_features + attn_ext)), dim=1)
+
+
+    def __init__(self, num_classes, features_dim, ext_features_dim=None, num_heads=4, dropout=0.2):
         '''
         num_classes: the number of classes in the dataset
 
@@ -34,18 +66,17 @@ class AttentionHead(nn.Module):
         num_heads: the number of heads in the multiheadattention models (play with this, 4 or 8 would be a good start)
         '''
         super().__init__()
-        self.self_attn = nn.MultiheadAttention(
-            features_dim, num_heads, dropout=dropout
-        )
-        # project external (SSiT) features to the same dimension as the input (MedViT) features
-        if ext_features_dim is not None and ext_features_dim != features_dim:
-            self.projector = nn.Linear(ext_features_dim, features_dim)
-        else:
-            self.projector = nn.Identity()
+        self.cross_attention = self.CrossAttention(
+            features_dim, ext_features_dim,
+            num_heads, dropout
+        ) if ext_features_dim is not None else None
+
+        dim = (features_dim + ext_features_dim) if ext_features_dim is not None else features_dim
+        self.norm = nn.LayerNorm(dim)
+        self.self_attention = nn.MultiheadAttention(dim, num_heads, dropout=dropout)
 
         # replace it with your best classifier
-        self.classifier = nn.Linear(features_dim, num_classes)
-        self.norm = nn.LayerNorm(features_dim)
+        self.classifier = nn.Linear(dim, num_classes)
 
         # self.classifier = nn.Sequential(
         #         nn.Linear(features_dim, 512),
@@ -57,12 +88,12 @@ class AttentionHead(nn.Module):
 
     def forward(self, features, ext_features=None):
 
-        ext_features = self.projector(ext_features) if ext_features is not None else features
+        # do cross_attention if needed
+        if ext_features is not None:
+            features = self.cross_attention(features, ext_features)
 
-        attn, _ = self.self_attn(
-            ext_features, features, features,         # query, key, value
-            attn_mask=None, key_padding_mask=None
-        )
+        # do self_attention
+        attn, _ = self.self_attention(features, features, features)
 
         # classify the output
         return self.classifier(self.norm(features + attn))
@@ -156,8 +187,8 @@ class Classifier(PreTrainedModel):
                                 )
 
         # TODO: create flag
-        for param in self.model.parameters():
-            param.requires_grad = False
+        # for param in self.model.parameters():
+        #     param.requires_grad = False
 
         # self.head = nn.Sequential(
         #         nn.Linear(input_head_size, 512),
