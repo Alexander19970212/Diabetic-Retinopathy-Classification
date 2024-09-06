@@ -248,18 +248,19 @@ def get_func_transform(input_size, input_size2=None, train_mode=True):
             images.append(img)
             masks.append(mask)
 
-            if input_size2 != None:
-                transformed2 = resize_transform2(image=img_init, mask=mask_init)
-                if train_mode:
-                    transformed2 = transform(**transformed2)
-                transformed2 = normalization(**transformed2)
-                img2, mask2 = transformed2['image'], transformed2['mask']
-                images2.append(img2)
-                masks2.append(mask2)
+            # if input_size2 != None:
+            #     transformed2 = resize_transform2(image=img_init, mask=mask_init)
+            #     if train_mode:
+            #         transformed2 = transform(**transformed2)
+            #     transformed2 = normalization(**transformed2)
+            #     img2, mask2 = transformed2['image'], transformed2['mask']
+            #     images2.append(img2)
+            #     masks2.append(mask2)
 
-            else:
-                images2.append(img)
-                masks2.append(mask)
+            # else:
+            
+            images2.append(img)
+            masks2.append(mask)
 
         inputs = {}
         inputs['pixel_values'] = images
