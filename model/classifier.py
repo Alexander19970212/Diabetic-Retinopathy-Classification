@@ -161,7 +161,7 @@ class AttentionHead(nn.Module):
         # classify the output
         return self.classifier(self.norm(features + attn))
 """
-
+"""
 class AttentionHead(nn.Module):
     # based on MultiHeadAttention: https://pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html
 
@@ -227,6 +227,149 @@ class AttentionHead(nn.Module):
 
         # classify the output
         return self.classifier(features)
+"""
+
+"""
+class AttentionHead(nn.Module):
+    # based on MultiHeadAttention: https://pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html
+
+    class CrossAttention(nn.Module):
+        def __init__(self, features_dim, ext_features_dim, num_heads=4, dropout=0.2):
+            super().__init__()
+            self.attention = nn.MultiheadAttention(
+                features_dim, num_heads, dropout=dropout
+            )
+
+            self.attention_ext = nn.MultiheadAttention(
+                ext_features_dim, num_heads, dropout=dropout
+            )
+
+            self.norm1 = nn.LayerNorm(features_dim)
+            self.norm2 = nn.LayerNorm(ext_features_dim)
+
+            if ext_features_dim != features_dim:
+                self.projector = nn.Linear(ext_features_dim, features_dim)
+                self.projector_ext = nn.Linear(features_dim, ext_features_dim)
+
+        def forward(self, features, ext_features):
+            features_pr = F.relu(self.projector_ext(features))
+            ext_features_pr = F.relu(self.projector(ext_features))
+
+            attn, _ = self.attention(
+                # query, key, value
+                features, ext_features_pr, ext_features_pr,
+                attn_mask=None, key_padding_mask=None
+            )
+
+            attn_ext, _ = self.attention_ext(
+                ext_features, features_pr, features_pr,   # query, key, value
+                attn_mask=None, key_padding_mask=None
+            )
+
+            return torch.concat((self.norm1(features + attn), self.norm2(ext_features + attn_ext)), dim=-1)
+
+    def __init__(self, num_classes, features_dim, ext_features_dim=None, num_heads=4, dropout=0.2):
+        '''
+        num_classes: the number of classes in the dataset
+
+        features_dim: the number of expected features in the input (from MedViT)
+        ext_features_dim: the number of expected features in the external input (from SSiT) (if None, no external input)
+
+        num_heads: the number of heads in the multiheadattention models (play with this, 4 or 8 would be a good start)
+        '''
+        super().__init__()
+        self.cross_attention = self.CrossAttention(
+            features_dim, ext_features_dim,
+            num_heads, dropout
+        ) if ext_features_dim is not None else None
+
+        dim = (features_dim + ext_features_dim) if ext_features_dim is not None else features_dim
+
+        # replace it with your best classifier
+        self.classifier = nn.Linear(dim, num_classes)
+
+
+    def forward(self, features, ext_features=None):
+
+        # do cross_attention if needed
+        if ext_features is not None:
+            features = self.cross_attention(features, ext_features)
+
+        # classify the output
+        return self.classifier(features)
+"""
+
+class AttentionHead(nn.Module):
+    # based on MultiHeadAttention: https://pytorch.org/docs/stable/generated/torch.nn.MultiheadAttention.html
+
+    class CrossAttention(nn.Module):
+        def __init__(self, features_dim, ext_features_dim, num_heads=4, dropout=0.2):
+            super().__init__()
+            self.attention = nn.MultiheadAttention(
+                features_dim, num_heads, dropout=dropout
+            )
+
+            self.attention_ext = nn.MultiheadAttention(
+                ext_features_dim, num_heads, dropout=dropout
+            )
+
+            self.norm1 = nn.LayerNorm(features_dim)
+            self.norm2 = nn.LayerNorm(ext_features_dim)
+
+            if ext_features_dim != features_dim:
+                self.projector = nn.Linear(ext_features_dim, features_dim)
+                self.projector_ext = nn.Linear(features_dim, ext_features_dim)
+
+        def forward(self, features, ext_features):
+            features_pr = F.relu(self.projector_ext(features))
+            ext_features_pr = F.relu(self.projector(ext_features))
+
+            attn, _ = self.attention(
+                # query, key, value
+                features, ext_features_pr, ext_features_pr,
+                attn_mask=None, key_padding_mask=None
+            )
+
+            attn_ext, _ = self.attention_ext(
+                ext_features, features_pr, features_pr,   # query, key, value
+                attn_mask=None, key_padding_mask=None
+            )
+
+            return torch.concat((self.norm1(features + attn), self.norm2(ext_features + attn_ext)), dim=-1)
+
+    def __init__(self, num_classes, features_dim, ext_features_dim=None, num_heads=4, dropout=0.2):
+        '''
+        num_classes: the number of classes in the dataset
+
+        features_dim: the number of expected features in the input (from MedViT)
+        ext_features_dim: the number of expected features in the external input (from SSiT) (if None, no external input)
+
+        num_heads: the number of heads in the multiheadattention models (play with this, 4 or 8 would be a good start)
+        '''
+        super().__init__()
+        self.cross_attention = self.CrossAttention(
+            features_dim, ext_features_dim,
+            num_heads, dropout
+        ) if ext_features_dim is not None else None
+
+        dim = (features_dim + ext_features_dim) if ext_features_dim is not None else features_dim
+        self.norm = nn.LayerNorm(dim)
+        self.self_attention = nn.MultiheadAttention(dim, num_heads, dropout=dropout)
+
+        # replace it with your best classifier
+        self.classifier = nn.Linear(dim, num_classes)
+
+
+    def forward(self, features, ext_features=None):
+
+        # do cross_attention if needed
+        if ext_features is not None:
+            features = self.cross_attention(features, ext_features)
+
+        attn, _ = self.self_attention(features, features, features)
+
+        # classify the output
+        return self.classifier(self.norm(features + attn))
 
 
 class ClfConfig(PretrainedConfig):
@@ -237,6 +380,7 @@ class ClfConfig(PretrainedConfig):
         backbone_name = "resnet50",
         num_classes = 5,
         input_size = 224,
+        input_size2 = 384,
         pretrained = True,
         only_ssit_embds = False,
         external_embedings = False,
@@ -251,6 +395,7 @@ class ClfConfig(PretrainedConfig):
         self.backbone_name = backbone_name
         self.num_classes = num_classes
         self.input_size = input_size
+        self.input_size2 = input_size2
         self.pretrained = pretrained
 
         self.only_ssit_embds = only_ssit_embds
@@ -299,7 +444,7 @@ class Classifier(PreTrainedModel):
             self.fc_norm = nn.LayerNorm(emd_chs) if config.use_fc_norm else nn.Identity()
             self.pre_logits = nn.Identity()
 
-            self.embd_model = SSitEncoder('ViT-S-p16', config.emb_model_checkpoint)
+            self.embd_model = SSitEncoder('ViT-S-p16', config.emb_model_checkpoint, config.input_size2)
             for param in self.embd_model.parameters():
                 param.requires_grad = False
         else:
@@ -332,7 +477,7 @@ class Classifier(PreTrainedModel):
         #         # nn.Softmax()
         #         )
 
-        # nn.Linear(input_head_size, config.num_classes)
+        # self.head = nn.Linear(input_head_size, config.num_classes)
 
     def remove_head(self, cut_layers):
         for cut_layer_name in cut_layers:
@@ -362,6 +507,9 @@ class Classifier(PreTrainedModel):
     def forward(self, pixel_values, pixel_values2, labels=None):
         # define function in transformers library maner
         # print("PPV: ", pixel_values)
+        # print("PV", pixel_values.shape)
+        # print("PV2", pixel_values2.shape)
+
         if self.only_ssit_embds == False:
             if self.backbone_type == "features":
                 features = self.model(pixel_values2)
@@ -370,10 +518,13 @@ class Classifier(PreTrainedModel):
                 features = self.concat_embedings(bb_embedings)
                 
         if self.external_embedings:
+            # print("PV2", pixel_values2.shape)
+            # print("PV", pixel_values.shape)
             embedings = self.embd_model(pixel_values)
             embedings = self.concat_embedings(embedings)
             if self.only_ssit_embds:
                 # features = embedings #!
+                
                 logits = self.head(embedings) #!!
             else:
                 # features = torch.cat((features, embedings), dim=1) #!

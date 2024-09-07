@@ -23,6 +23,7 @@ def load_checkpoint(model, checkpoint_path, checkpoint_key, linear_key):
     #         exec('checkpoint.'+torchmodify(name)+'=nn.GELU()')
 
     state_dict = checkpoint.state_dict()
+    # state_dict = checkpoint['state_dict']
     for k in list(state_dict.keys()):
         # retain only base_encoder up to before the embedding layer
         if k.startswith(checkpoint_key) and not k.startswith('%s.%s' % (checkpoint_key, linear_key)):
@@ -54,7 +55,8 @@ class SSitEncoder(nn.Module):
         checkpoint_key = 'base_encoder'
         
         if checkpoint:
-            load_checkpoint(self.model, checkpoint, checkpoint_key, linear_key)
+            # load_checkpoint(self.model, checkpoint, checkpoint_key, linear_key)
+            load_checkpoint(self.model, 'model/checkpoints/pretrained_vits_imagenet_initialized.pt', checkpoint_key, linear_key)
         else:
             print('No checkpoint provided. Training from scratch.')
 

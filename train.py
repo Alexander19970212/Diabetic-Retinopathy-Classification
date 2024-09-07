@@ -39,14 +39,15 @@ if __name__ == '__main__':
     parser.add_argument('--metric_for_best_model', default="kappa")
     parser.add_argument('--dataset_root_dir', default="../mnt/local/data/kalexu97")
     # parser.add_argument('--with_emdedings', default=None)
-    parser.add_argument('--emb_model_checkpoint', default="model/checkpoints/pretrained_vits_imagenet_initialized.pt")
+    # model/checkpoints/pretrained_vits_imagenet_initialized.pt
+    parser.add_argument('--emb_model_checkpoint', default="model/checkpoints/ssit_ddr_pretrained.pt")
     parser.add_argument('--plots_path', default="src")
     parser.add_argument('--save_hgf_model', default=True, action="store_true")
     parser.add_argument('--saved_model_dir', default="model/checkpoints")
     parser.add_argument('--backbone_name', default="resnet50")
     parser.add_argument('--num_classes', type=int, default=5)
     parser.add_argument('--input_size', type=int, default=224)
-    parser.add_argument('--input_size2', type=int, default=224)
+    parser.add_argument('--input_size2', type=int, default=384)
     parser.add_argument('--pretrained', default=True, action="store_true")
     parser.add_argument('--only_ssit_embds', default=False, action="store_true")
     parser.add_argument('--external_embedings', default=False, action="store_true")
@@ -64,6 +65,7 @@ if __name__ == '__main__':
     model_config = ClfConfig(backbone_name = args.backbone_name,
         num_classes = args.num_classes,
         input_size = args.input_size,
+        input_size2 = args.input_size2,
         pretrained = args.pretrained,
         only_ssit_embds = args.only_ssit_embds,
         external_embedings = args.external_embedings,
@@ -76,6 +78,8 @@ if __name__ == '__main__':
     if args.load_backbone:
        model.load_backbone_checkpoint(args.backbone_checkpoint_path_load)
 
+    model.embd_model.load_state_dict(torch.load(args.emb_model_checkpoint))
+
     test_dataset, train_dataset, valid_dataset = build_datasets(args.dataset_name,
             args.dataset_root_dir,
             input_size=args.input_size,
@@ -85,6 +89,9 @@ if __name__ == '__main__':
 
     if args.save_backbone:
         model.save_backbone_checkpoint(args.backbone_checkpoint_path_load)
+
+    # torch.save(model.embd_model.state_dict(), "model/checkpoints/ssit_ddr_pretrained.pt")
+    # print("SSIT is saved")
 
     # if args.test_after_train:
         # test(model, train_dataset, valid_dataset, test_dataset, args)

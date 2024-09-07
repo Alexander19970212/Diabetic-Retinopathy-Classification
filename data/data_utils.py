@@ -222,10 +222,10 @@ def get_func_transform(input_size, input_size2=None, train_mode=True):
             resize_transform = A.Resize(height=input_size, width=input_size, interpolation=cv2.INTER_LANCZOS4, p=1)
 
         if input_size2 != None:
-            if train_mode:
-                resize_transform2 = A.RandomResizedCrop(size = (input_size2, input_size2), scale=(0.87, 1), ratio=(0.7, 1.3), interpolation=cv2.INTER_LANCZOS4)
-            else:
-                resize_transform2 = A.Resize(height=input_size2, width=input_size2, interpolation=cv2.INTER_LANCZOS4, p=1)
+            # if train_mode:
+            #     resize_transform2 = A.RandomResizedCrop(size = (input_size2, input_size2), scale=(0.87, 1), ratio=(0.7, 1.3), interpolation=cv2.INTER_LANCZOS4)
+            # else:
+            resize_transform2 = A.Resize(height=input_size2, width=input_size2, interpolation=cv2.INTER_LANCZOS4, p=1)
 
         normalization = A.Compose([
             A.Normalize(mean=mean, std=std),
@@ -243,10 +243,17 @@ def get_func_transform(input_size, input_size2=None, train_mode=True):
             transformed = resize_transform(image=img_init, mask = mask_init)
             if train_mode:
                 transformed = transform(**transformed)
+            if input_size2 != None:
+                transformed2 = resize_transform2(**transformed)
             transformed = normalization(**transformed)
-            img, mask = transformed['image'], transformed['mask']
-            images.append(img)
-            masks.append(mask)
+            transformed2 = normalization(**transformed2)
+            # img, mask = transformed['image'], transformed['mask']
+            images.append(transformed2['image'])
+            masks.append(transformed2['mask'])
+            
+            images2.append(transformed['image'])
+            masks2.append(transformed['mask'])
+
 
             # if input_size2 != None:
             #     transformed2 = resize_transform2(image=img_init, mask=mask_init)
@@ -259,8 +266,8 @@ def get_func_transform(input_size, input_size2=None, train_mode=True):
 
             # else:
             
-            images2.append(img)
-            masks2.append(mask)
+            # images2.append(img)
+            # masks2.append(mask)
 
         inputs = {}
         inputs['pixel_values'] = images
