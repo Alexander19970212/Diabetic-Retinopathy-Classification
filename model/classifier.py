@@ -445,22 +445,22 @@ class Classifier(PreTrainedModel):
             self.pre_logits = nn.Identity()
 
             self.embd_model = SSitEncoder('ViT-S-p16', config.emb_model_checkpoint, config.input_size2)
-            for param in self.embd_model.parameters():
-                param.requires_grad = False
+            # for param in self.embd_model.parameters():
+            #     param.requires_grad = False
         else:
             emd_chs = None
             input_head_size = backbone_options[config.backbone_name]["feature_length"]
 
-        self.head = AttentionHead(num_classes=config.num_classes,
-                                features_dim=backbone_options[config.backbone_name]["feature_length"], #!!
-                                # features_dim=input_head_size, #!
-                                # features_dim = 768/2),
-                                ext_features_dim=emd_chs,
-                                num_heads=4,
-                                # apply_encoder=config.apply_encoder,
-                                # inner_dim=512,
-                                dropout=0.2
-                                )
+        # self.head = AttentionHead(num_classes=config.num_classes,
+        #                         features_dim=backbone_options[config.backbone_name]["feature_length"], #!!
+        #                         # features_dim=input_head_size, #!
+        #                         # features_dim = 768/2),
+        #                         ext_features_dim=emd_chs,
+        #                         num_heads=4,
+        #                         # apply_encoder=config.apply_encoder,
+        #                         # inner_dim=512,
+        #                         dropout=0.2
+        #                         )
 
         # TODO: create flag
         # for param in self.model.parameters():
@@ -477,7 +477,7 @@ class Classifier(PreTrainedModel):
         #         # nn.Softmax()
         #         )
 
-        # self.head = nn.Linear(input_head_size, config.num_classes)
+        self.head = nn.Linear(input_head_size, config.num_classes)
 
     def remove_head(self, cut_layers):
         for cut_layer_name in cut_layers:

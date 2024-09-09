@@ -78,7 +78,7 @@ if __name__ == '__main__':
     if args.load_backbone:
        model.load_backbone_checkpoint(args.backbone_checkpoint_path_load)
 
-    model.embd_model.load_state_dict(torch.load(args.emb_model_checkpoint))
+    # model.embd_model.load_state_dict(torch.load(args.emb_model_checkpoint))
 
     test_dataset, train_dataset, valid_dataset = build_datasets(args.dataset_name,
             args.dataset_root_dir,
@@ -90,8 +90,8 @@ if __name__ == '__main__':
     if args.save_backbone:
         model.save_backbone_checkpoint(args.backbone_checkpoint_path_load)
 
-    # torch.save(model.embd_model.state_dict(), "model/checkpoints/ssit_ddr_pretrained.pt")
-    # print("SSIT is saved")
+    torch.save(model.embd_model.state_dict(), "model/checkpoints/ssit_eyepack_pretrained.pt")
+    print("SSIT is saved...")
 
     # if args.test_after_train:
         # test(model, train_dataset, valid_dataset, test_dataset, args)

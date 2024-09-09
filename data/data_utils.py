@@ -16,15 +16,22 @@ from albumentations.pytorch import ToTensorV2
 from PIL import Image, ImageFilter, ImageOps
 from torchvision.transforms import functional as F
 
-datasets_info = {"DDR": {"dataset_name": "DDR-dataset", "folder_prefix": "DR_grading"},
-                 "EyePacs": {"dataset_name": "EyePacs_dataset", "folder_prefix": "EyePacs_grading"}}
+datasets_info = {"DDR": {"dataset_name": "DDR-dataset",
+                         "folder_prefix": "DR_grading",
+                         "mean": [0.4143788,  0.25651503, 0.12490026],
+                         "std": [0.29622576, 0.20603535, 0.14079799]},
+                 "EyePacs": {"dataset_name": "EyePacs_dataset",
+                             "folder_prefix": "EyePacs_grading",
+                             "mean": [0.3817509,  0.26498045, 0.18912451],
+                             "std": [0.29170244, 0.21138131, 0.17142779] 
+                 }}
 # dataset_root_dir = "data/local_datasets"
 
 # mean = [0.425753653049469, 0.29737451672554016, 0.21293757855892181]  # eyepacs mean
 # std = [0.27670302987098694, 0.20240527391433716, 0.1686241775751114]  # eyepacs std
 
-mean = [0.4143788,  0.25651503, 0.12490026]
-std = [0.29622576, 0.20603535, 0.14079799]
+# mean = [0.4143788,  0.25651503, 0.12490026]
+# std = [0.29622576, 0.20603535, 0.14079799]
 
 data_aug = {
     'brightness': 0.4,
@@ -198,7 +205,7 @@ def npy_loader(mask_path):
         img = np.load(f)
         return img
 
-def get_func_transform(input_size, input_size2=None, train_mode=True):
+def get_func_transform(input_size, mean, std, input_size2=None, train_mode=True):
     def f_transform(examples):
         """
         The function is used to preprocess train dataset.
@@ -306,15 +313,18 @@ def build_datasets(dataset_name, dataset_root_dir, input_size=224, input_size2=N
 
         labelsTable = labelsTable.drop(columns=['image_path'], axis=1)
 
+        mean = datasets_info[dataset_name]["mean"]
+        std = datasets_info[dataset_name]["std"]
+
         # special for train subset
         if subset_name == "train":
             # resampling
             print("Train subset resampling ...")
             labelsTable = resample(labelsTable, ratio = 35)
             # random trainsforms with mask
-            func_transform = get_func_transform(input_size, input_size2, train_mode=True)
+            func_transform = get_func_transform(input_size, mean, std, input_size2, train_mode=True)
         else:
-            func_transform = get_func_transform(input_size, input_size2, train_mode=False)
+            func_transform = get_func_transform(input_size, mean, std, input_size2, train_mode=False)
 
         # to Dataset
         dataset = Dataset.from_pandas(labelsTable, preserve_index=False)

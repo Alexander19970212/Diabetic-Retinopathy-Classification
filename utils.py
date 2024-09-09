@@ -242,6 +242,7 @@ def train(model, train_dataset, valid_dataset, test_dataset, args):
         model.save_pretrained(f"{args.saved_model_dir}/{args.run_name}", from_pt=True)
 
     if args.test_after_train:
+        print("Testing ...")
         metrics = trainer.evaluate(test_dataset)
         trainer.log_metrics("test", metrics)
         trainer.save_metrics("test", metrics)
