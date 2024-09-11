@@ -18,10 +18,13 @@ from torchvision.transforms import functional as F
 
 datasets_info = {"DDR": {"dataset_name": "DDR-dataset",
                          "folder_prefix": "DR_grading",
+                        #  "train_folder": "train05_1",
+                         "train_folder": "train05_2",
                          "mean": [0.4143788,  0.25651503, 0.12490026],
                          "std": [0.29622576, 0.20603535, 0.14079799]},
                  "EyePacs": {"dataset_name": "EyePacs_dataset",
                              "folder_prefix": "EyePacs_grading",
+                             "train_folder": "train",
                              "mean": [0.3817509,  0.26498045, 0.18912451],
                              "std": [0.29170244, 0.21138131, 0.17142779] 
                  }}
@@ -303,7 +306,14 @@ def build_datasets(dataset_name, dataset_root_dir, input_size=224, input_size2=N
     for subset_name in subset_names:
         image_folder = f'{dataset_root_dir}/{datasets_info[dataset_name]["dataset_name"]}/{datasets_info[dataset_name]["folder_prefix"]}_processed/{subset_name}'
         saliency_map_folder = f'{dataset_root_dir}/{datasets_info[dataset_name]["dataset_name"]}/{datasets_info[dataset_name]["folder_prefix"]}_saliency/{subset_name}'
-        table_path = f'{dataset_root_dir}/{datasets_info[dataset_name]["dataset_name"]}/{subset_name}.csv'
+        
+        if subset_name == "train":
+            csv_name = datasets_info[dataset_name]["train_folder"]
+        else:
+            csv_name = subset_name
+
+        print("Table name: ", csv_name)
+        table_path = f'{dataset_root_dir}/{datasets_info[dataset_name]["dataset_name"]}/{csv_name}.csv'
 
         #load table
         labelsTable = pd.read_csv(table_path)

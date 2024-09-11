@@ -31,11 +31,11 @@ if __name__ == '__main__':
     parser.add_argument('--run_name', default="clf_test")
     parser.add_argument('--dataloader_num_workers', default=16)
     parser.add_argument('--lr_scheduler_type', default="linear")
-    parser.add_argument('--learning_rate', default=2e-5)
+    parser.add_argument('--learning_rate', default=5e-6)
     parser.add_argument('--batch_size', default=16)
     parser.add_argument('--gradient_accumulation_steps', default=4)
     parser.add_argument('--num_train_epochs', type=int, default=15)
-    parser.add_argument('--warmup_ratio', default=0.02)
+    parser.add_argument('--warmup_ratio', default=0.1) #0.02
     parser.add_argument('--metric_for_best_model', default="kappa")
     parser.add_argument('--dataset_root_dir', default="../mnt/local/data/kalexu97")
     # parser.add_argument('--with_emdedings', default=None)
@@ -79,6 +79,9 @@ if __name__ == '__main__':
        model.load_backbone_checkpoint(args.backbone_checkpoint_path_load)
 
     # model.embd_model.load_state_dict(torch.load(args.emb_model_checkpoint))
+    # model.embd_model.load_state_dict(torch.load("model/checkpoints/ssit_eyepack_pretrained.pt"))
+    # model.embd_model.load_state_dict(torch.load("model/checkpoints/ssit_ddr05_1_pretrained.pt"))
+    model.embd_model.load_state_dict(torch.load("model/checkpoints/ssit_eye_ddr05_1_pretrained.pt"))
 
     test_dataset, train_dataset, valid_dataset = build_datasets(args.dataset_name,
             args.dataset_root_dir,
@@ -90,8 +93,8 @@ if __name__ == '__main__':
     if args.save_backbone:
         model.save_backbone_checkpoint(args.backbone_checkpoint_path_load)
 
-    torch.save(model.embd_model.state_dict(), "model/checkpoints/ssit_eyepack_pretrained.pt")
-    print("SSIT is saved...")
+    # torch.save(model.embd_model.state_dict(), "model/checkpoints/ssit_eye_ddr05_1_pretrained.pt")
+    # print("SSIT is saved...")
 
     # if args.test_after_train:
         # test(model, train_dataset, valid_dataset, test_dataset, args)

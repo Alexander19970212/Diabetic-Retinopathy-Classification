@@ -206,6 +206,7 @@ def build_trainer(model, train_dataset, valid_dataset, args, train_mode=True):
         metric_for_best_model=args.metric_for_best_model, #"kappa", # select the best model via metric kappa
         greater_is_better = True,
         load_best_model_at_end=True,
+        # load_best_model_at_end=False,
         
         push_to_hub=False
     )
@@ -242,6 +243,11 @@ def train(model, train_dataset, valid_dataset, test_dataset, args):
         model.save_pretrained(f"{args.saved_model_dir}/{args.run_name}", from_pt=True)
 
     if args.test_after_train:
+        print("Final validating ...")
+        metrics = trainer.evaluate(valid_dataset)
+        trainer.log_metrics("final_valid", metrics)
+        trainer.save_metrics("final_valid", metrics)
+
         print("Testing ...")
         metrics = trainer.evaluate(test_dataset)
         trainer.log_metrics("test", metrics)
