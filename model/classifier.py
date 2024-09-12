@@ -5,7 +5,7 @@ import torchvision
 from transformers import PretrainedConfig
 from transformers import PreTrainedModel
 from SSIT.ssit_models import SSitEncoder
-from MedViT import MedViT, MedViT_large
+# from MedViT import MedViT, MedViT_large
 
 backbone_options = {
     "resnet50": {"model": torchvision.models.resnet50, 
@@ -13,12 +13,12 @@ backbone_options = {
                  "output_type": "features",
                  "cut_layers": ["fc"],
                  "params": {"pretrained": True}},
-    "MedViT": {"model": MedViT_large,
-               "feature_length": 1024,
-               "output_type": "features",
-               "cut_layers": ["proj_head"],
-               "pretrained_cfg": 'model/checkpoints/MedViT_large_im1k.pth',
-               "params": {"use_checkpoint": False}}
+    # "MedViT": {"model": MedViT_large,
+    #            "feature_length": 1024,
+    #            "output_type": "features",
+    #            "cut_layers": ["proj_head"],
+    #            "pretrained_cfg": 'model/checkpoints/MedViT_large_im1k.pth',
+    #            "params": {"use_checkpoint": False}}
 }
 
 """

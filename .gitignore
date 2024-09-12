@@ -10,6 +10,7 @@ model/SSIT/preprocess_embedings.py
 preprocess_embedings_draft.ipynb 
 wandb/
 Classifier/
+Classifier2/
 checkpoints/
 model/checkpoints
 model/SSIT/ssit_draft.ipynb

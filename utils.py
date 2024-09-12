@@ -1,5 +1,7 @@
 import os
-os.environ["CUDA_VISIBLE_DEVICES"]="1" # is need to train on 'hachiko'
+# os.environ["CUDA_VISIBLE_DEVICES"]="1" # is need to train on 'hachiko'
+from typing import Optional, Union
+from dataclasses import dataclass, field
 
 from sklearn.metrics import confusion_matrix
 import torch
@@ -8,8 +10,9 @@ from sklearn.metrics import cohen_kappa_score
 from sklearn.metrics import f1_score #, kappa
 from sklearn.metrics import roc_auc_score
 
-from transformers import TrainingArguments
-from transformers import Trainer
+from transformers import TrainingArguments, IntervalStrategy
+from transformers import add_start_docstrings
+from transformers import Trainer, TrainerCallback, TrainerState, TrainerControl
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,6 +23,79 @@ import json
 
 # Load accuracy evaluator
 accuracy = evaluate.load("accuracy")
+
+@dataclass
+@add_start_docstrings(TrainingArguments.__doc__)
+class ExtrTrainingArguments(TrainingArguments):
+    """
+    Args:
+         start_save_step (`int`, *optional*, defaults to `0`).
+    """
+
+    start_save_step: Optional[int] = field(
+        default=0,
+        metadata={
+            "help": (
+                "The first step from each trainer starts saving checkpoints."
+            )
+        },
+    )
+
+class CustomCallback(TrainerCallback):
+    "A callback that prints a message at the beginning of training"
+
+    def on_step_end(self, args: ExtrTrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        # Log
+        if state.global_step == 1 and args.logging_first_step:
+            control.should_log = True
+        if args.logging_strategy == IntervalStrategy.STEPS and state.global_step % state.logging_steps == 0:
+            control.should_log = True
+
+        # Evaluate
+        if (
+            args.eval_strategy == IntervalStrategy.STEPS
+            and state.global_step % state.eval_steps == 0
+            and args.eval_delay <= state.global_step
+        ):
+            control.should_evaluate = True
+
+        # Save (modification Here!!!)
+        if (
+            args.save_strategy == IntervalStrategy.STEPS
+            and state.global_step >= args.start_save_step
+            and state.save_steps > 0
+            and state.global_step % state.save_steps == 0
+        ):
+            control.should_save = True
+        else:
+            control.should_save = False
+
+        # End training
+        if state.global_step >= state.max_steps:
+            control.should_training_stop = True
+            # Save the model at the end if we have a save strategy
+            if args.save_strategy != IntervalStrategy.NO:
+                control.should_save = True
+
+        return control
+    
+    def on_epoch_end(self, args: ExtrTrainingArguments, state: TrainerState, control: TrainerControl, **kwargs):
+        # Log
+        if args.logging_strategy == IntervalStrategy.EPOCH:
+            control.should_log = True
+
+        # Evaluate
+        if args.eval_strategy == IntervalStrategy.EPOCH and args.eval_delay <= state.epoch:
+            control.should_evaluate = True
+
+        # Save
+        if (args.save_strategy == IntervalStrategy.EPOCH
+            and state.global_step >= args.start_save_step):
+            control.should_save = True
+        else:
+            control.should_save = False
+
+        return control
 
 # Define function to plot confusion matrix
 def plot_confusion_matrix(y_true, y_pred, file_name,
@@ -179,13 +255,14 @@ def get_collate_fn(with_embedings=False):
 
 def build_trainer(model, train_dataset, valid_dataset, args, train_mode=True):
     # arguments for training
-    training_args = TrainingArguments(
+    training_args = ExtrTrainingArguments(
         output_dir=args.output_dir, #"./SSiT-base",
         evaluation_strategy=args.evaluation_strategy, #"steps",
         logging_steps=args.logging_steps, #50,
 
         save_steps=args.save_steps, #50,
         eval_steps=args.eval_steps, #50,
+        start_save_step = args.start_save_step,
         save_total_limit=args.save_total_limit, #3,
         
         report_to=args.report_to, #"wandb",  # enable logging to W&B
@@ -225,7 +302,8 @@ def build_trainer(model, train_dataset, valid_dataset, args, train_mode=True):
         data_collator=collate_fn,
         compute_metrics=compute_metrics_f,
         train_dataset=train_dataset,
-        eval_dataset=valid_dataset
+        eval_dataset=valid_dataset,
+        callbacks=[CustomCallback]
     )
 
     return trainer
