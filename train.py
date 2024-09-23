@@ -1,6 +1,6 @@
 # main for train
 import os
-# os.environ["CUDA_VISIBLE_DEVICES"]="0" # is need to train on 'hachiko'
+os.environ["CUDA_VISIBLE_DEVICES"]="1" # is need to train on 'hachiko'
 import argparse
 import sys
 sys.path.append('model')
@@ -26,7 +26,7 @@ if __name__ == '__main__':
     parser.add_argument('--logging_steps', default=50)
     parser.add_argument('--save_steps', default=50)
     parser.add_argument('--eval_steps', default=50) 
-    parser.add_argument('--start_save_step', default=200)
+    parser.add_argument('--start_save_step', default=3800)
     parser.add_argument('--save_total_limit', default=3)
     parser.add_argument('--report_to', default="wandb")
     parser.add_argument('--run_name', default="clf_test")
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     parser.add_argument('--num_train_epochs', type=int, default=15)
     parser.add_argument('--warmup_ratio', default=0.1) #0.02
     parser.add_argument('--metric_for_best_model', default="kappa")
-    parser.add_argument('--dataset_root_dir', default="data/local_datasets/")
+    parser.add_argument('--dataset_root_dir', default="../mnt/local/data/kalexu97")
     # parser.add_argument('--with_emdedings', default=None)
     # model/checkpoints/pretrained_vits_imagenet_initialized.pt
     parser.add_argument('--emb_model_checkpoint', default="model/checkpoints/ssit_ddr_pretrained.pt")
@@ -80,9 +80,15 @@ if __name__ == '__main__':
        model.load_backbone_checkpoint(args.backbone_checkpoint_path_load)
 
     # model.embd_model.load_state_dict(torch.load(args.emb_model_checkpoint))
-    # model.embd_model.load_state_dict(torch.load("model/checkpoints/ssit_eyepack_pretrained.pt"))
+    model.embd_model.load_state_dict(torch.load("model/checkpoints/ssit_eyepack_pretrained.pt"))
     # model.embd_model.load_state_dict(torch.load("model/checkpoints/ssit_ddr05_1_pretrained.pt"))
-    model.embd_model.load_state_dict(torch.load("model/checkpoints/ssit_eye_ddr05_1_pretrained.pt"))
+    # model.embd_model.load_state_dict(torch.load("model/checkpoints/ssit_eye_ddr05_1_pretrained.pt"))
+    # model.embd_model.load_state_dict(torch.load("model/checkpoints/ssit_eye_ddr2_05_1_pretrained.pt"))
+    # model.embd_model.load_state_dict(torch.load("model/checkpoints/ssit_eye_ddr3_05_1_pretrained.pt"))
+    # model.embd_model.load_state_dict(torch.load("model/checkpoints/ssit_eye_ddr4_034_1_pretrained.pt"))
+    # model.embd_model.load_state_dict(torch.load("model/checkpoints/ssit_eye_ddr5_020_1_pretrained.pt"))
+    # model.embd_model.load_state_dict(torch.load("model/checkpoints/ssit_eye_ddr6_080_1_pretrained.pt"))
+    # model.embd_model.load_state_dict(torch.load("model/checkpoints/ssit_eye_ddr7_066_1_pretrained.pt"))
 
     test_dataset, train_dataset, valid_dataset = build_datasets(args.dataset_name,
             args.dataset_root_dir,
@@ -94,7 +100,7 @@ if __name__ == '__main__':
     if args.save_backbone:
         model.save_backbone_checkpoint(args.backbone_checkpoint_path_load)
 
-    # torch.save(model.embd_model.state_dict(), "model/checkpoints/ssit_eye_ddr05_1_pretrained.pt")
+    # torch.save(model.embd_model.state_dict(), "model/checkpoints/ssit_eyepack_pretrained_2.pt")
     # print("SSIT is saved...")
 
     # if args.test_after_train:

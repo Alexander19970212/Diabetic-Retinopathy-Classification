@@ -1,5 +1,5 @@
 import os
-# os.environ["CUDA_VISIBLE_DEVICES"]="1" # is need to train on 'hachiko'
+os.environ["CUDA_VISIBLE_DEVICES"]="1" # is need to train on 'hachiko'
 from typing import Optional, Union
 from dataclasses import dataclass, field
 
