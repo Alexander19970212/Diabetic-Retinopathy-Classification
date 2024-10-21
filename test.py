@@ -41,6 +41,7 @@ if __name__ == '__main__':
     parser.add_argument('--save_hgf_model', default=True, action="store_true")
     parser.add_argument('--saved_model_dir', default="model/checkpoints")
     parser.add_argument('--input_size', type=int, default=224)
+    parser.add_argument('--input_size2', type=int, default=384)
     parser.add_argument('--save_backbone', default=False, action="store_true")
     parser.add_argument('--load_backbone', default=False, action="store_true")
     parser.add_argument('--backbone_checkpoint_path_load', default="model/checkpoints/resnet50_backbone.pt")
@@ -49,7 +50,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
     
     model = Classifier.from_pretrained(f"{args.saved_model_dir}/{args.run_name}").to(device)
-    test_dataset, train_dataset, valid_dataset = build_datasets(args.dataset_name, args.dataset_root_dir, input_size=args.input_size)
+    test_dataset, train_dataset, valid_dataset = build_datasets(args.dataset_name, args.
+            dataset_root_dir,
+            input_size=args.input_size,
+            input_size2=args.input_size2)
+
+    model.embd_model.load_state_dict(torch.load("model/checkpoints/ssit_eyepack_pretrained.pt"))
 
     model.eval()
         

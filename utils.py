@@ -353,14 +353,19 @@ def test(model, test_dataset, train_dataset, valid_dataset, args, device):
     all_logits = []
     all_labels = []
 
-    model.model.eval()
+    try:
+        model.model.eval()
+    except:
+        print("Model doesn't have a backbone")
+
     with torch.no_grad():
         for batch_ids in tqdm(splited_dataframe):
             batch = test_dataset[batch_ids]
             pixel_values = torch.stack([x for x in batch['pixel_values']]).to(device)
+            pixel_values2 = torch.stack([x for x in batch['pixel_values2']]).to(device)
             labels = torch.tensor([x for x in batch['label']])
     
-            logits = model.forward(pixel_values=pixel_values)["logits"]
+            logits = model.forward(pixel_values=pixel_values, pixel_values2 = pixel_values2)["logits"]
             all_logits.append(logits.to('cpu'))
             all_labels.append(labels)
 
