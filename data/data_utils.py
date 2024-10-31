@@ -19,7 +19,7 @@ from torchvision.transforms import functional as F
 datasets_info = {"DDR": {"dataset_name": "DDR-dataset",
                          "folder_prefix": "DR_grading",
                         #  "train_folder": "train05_1",
-                         "train_folder": "train05_2",
+                         # "train_folder": "train05_2",
                         #  "train_folder": "train2_05_1",
                         #   "train_folder": "train2_05_2",
                         #   "train_folder": "train3_05_1",
@@ -33,7 +33,7 @@ datasets_info = {"DDR": {"dataset_name": "DDR-dataset",
                         # "train_folder": "train7_066_1",
                         # "train_folder": "train8_100_1",
                         # "train_folder": "train7_034_2",
-                        # "train_folder": "train9_500_1",
+                        "train_folder": "train9_500_1",
                         #  "train_folder": "train",
                          "mean": [0.4143788,  0.25651503, 0.12490026],
                          "std": [0.29622576, 0.20603535, 0.14079799]},
@@ -357,7 +357,7 @@ def build_datasets(dataset_name, dataset_root_dir, input_size=224, input_size2=N
         else:
             csv_name = subset_name
 
-        print("Table csv ddr05_2 name: ", csv_name)
+        print("Table 9csv ddr500 name: ", csv_name)
         table_path = f'{dataset_root_dir}/{datasets_info[dataset_name]["dataset_name"]}/{csv_name}.csv'
 
         #load table

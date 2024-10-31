@@ -10,6 +10,43 @@ from MedViT import MedViT, MedViT_large
 backbone_options = {
     "resnet50": {"model": torchvision.models.resnet50, 
                  "feature_length":  2048, 
+                 "input_size": 224,
+                 "output_type": "features",
+                 "cut_layers": ["fc"],
+                 "params": {"pretrained": True}},
+    "swin_v2_b": {"model": torchvision.models.swin_v2_b, 
+                 "feature_length":  1024, 
+                 "input_size": 256,
+                 "output_type": "features",
+                 "cut_layers": ["head"],
+                 "params": {"pretrained": True}},
+    "vit_b_16": {"model": torchvision.models.vit_b_16, 
+                 "feature_length":  768, 
+                 "input_size": 224,
+                 "output_type": "features",
+                 "cut_layers": ["heads"],
+                 "params": {"pretrained": True}},
+    "vgg16": {"model": torchvision.models.vgg16,
+                 "feature_length":  4096, 
+                 "input_size": 224,
+                 "output_type": "features",
+                 "cut_layers": ["classifier-6"],
+                 "params": {"pretrained": True}},
+    "efficientnet_v2_s": {"model": torchvision.models.efficientnet_v2_s, 
+                 "feature_length":  1280, 
+                 "input_size": 384,
+                 "output_type": "features",
+                 "cut_layers": ["classifier"],
+                 "params": {"pretrained": True}},
+    "inception_v3": {"model": torchvision.models.inception_v3,
+                 "feature_length":  2048, 
+                 "input_size": 299,
+                 "output_type": "features",
+                 "cut_layers": ["fc"],
+                 "params": {"pretrained": True}},
+    "resnext101_32x8d": {"model": torchvision.models.resnext101_32x8d,
+                 "feature_length":  2048, 
+                 "input_size": 224,
                  "output_type": "features",
                  "cut_layers": ["fc"],
                  "params": {"pretrained": True}},
@@ -445,10 +482,11 @@ class Classifier(PreTrainedModel):
             self.pre_logits = nn.Identity()
 
             self.embd_model = SSitEncoder('ViT-S-p16', config.emb_model_checkpoint, config.input_size2)
-            if self.only_ssit_embds == False:
-                print("SSIT freezing ...")
-                for param in self.embd_model.parameters():
-                    param.requires_grad = False
+            print("SSIT input size: ", config.input_size2)
+            # if self.only_ssit_embds == False:
+            #     print("SSIT freezing ...")
+            #     for param in self.embd_model.parameters():
+            #         param.requires_grad = False
         else:
             emd_chs = None
             input_head_size = backbone_options[config.backbone_name]["feature_length"]
@@ -478,6 +516,12 @@ class Classifier(PreTrainedModel):
                 self.model.fc = torch.nn.Identity()
             elif cut_layer_name == "proj_head":
                 self.model.proj_head = torch.nn.Identity()
+            elif cut_layer_name == "head":
+                self.model.head = torch.nn.Identity()
+            elif cut_layer_name == "heads":
+                self.model.heads = torch.nn.Identity()
+            elif cut_layer_name == "classifier":
+                self.model.classifier = torch.nn.Identity()
     
     def save_backbone_checkpoint(self, checkpoint_path):
         torch.save(self.model.state_dict(), checkpoint_path)
