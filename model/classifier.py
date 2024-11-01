@@ -41,7 +41,7 @@ backbone_options = {
     "inception_v3": {"model": torchvision.models.inception_v3,
                  "feature_length":  2048, 
                  "input_size": 299,
-                 "output_type": "features",
+                 "output_type": "logits",
                  "cut_layers": ["fc"],
                  "params": {"pretrained": True}},
     "resnext101_32x8d": {"model": torchvision.models.resnext101_32x8d,
@@ -284,9 +284,9 @@ class AttentionHead(nn.Module):
             self.norm1 = nn.LayerNorm(features_dim)
             self.norm2 = nn.LayerNorm(ext_features_dim)
 
-            if ext_features_dim != features_dim:
-                self.projector = nn.Linear(ext_features_dim, features_dim)
-                self.projector_ext = nn.Linear(features_dim, ext_features_dim)
+            # if ext_features_dim != features_dim:
+            self.projector = nn.Linear(ext_features_dim, features_dim)
+            self.projector_ext = nn.Linear(features_dim, ext_features_dim)
 
         def forward(self, features, ext_features):
             features_pr = F.relu(self.projector_ext(features))
@@ -522,6 +522,8 @@ class Classifier(PreTrainedModel):
                 self.model.heads = torch.nn.Identity()
             elif cut_layer_name == "classifier":
                 self.model.classifier = torch.nn.Identity()
+            elif cut_layer_name == "classifier-6":
+                self.model.classifier[6] = torch.nn.Identity()
     
     def save_backbone_checkpoint(self, checkpoint_path):
         torch.save(self.model.state_dict(), checkpoint_path)
@@ -550,6 +552,10 @@ class Classifier(PreTrainedModel):
         if self.only_ssit_embds == False:
             if self.backbone_type == "features":
                 features = self.model(pixel_values2)
+            elif self.backbone_type == "logits":
+                features = self.model(pixel_values2)
+                if torch.is_tensor(features) == False:
+                    features = features.logits
             elif self.backbone_type == "embedings":
                 bb_embedings = self.model(pixel_values2)
                 features = self.concat_embedings(bb_embedings)
