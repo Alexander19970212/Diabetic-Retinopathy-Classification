@@ -1,3 +1,6 @@
+# original implementation from
+# https://github.com/YijinHuang/SSiT/blob/master/ssit.py
+
 # =====================================================================
 # Based on moco-v3/moco/builder.py
 # https://github.com/facebookresearch/moco-v3/blob/main/moco/builder.py
@@ -7,6 +10,9 @@ from functools import partial
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+from vits import archs
+
 
 def build_model(args):
     assert args.arch in archs.keys(), 'Not implemented architecture.'

@@ -1,3 +1,6 @@
+# original implementation from
+# https://github.com/YijinHuang/SSiT/blob/master/vits.py
+
 # =============================================================================================
 # Based on timm/models/vision_transformer.py
 # https://github.com/rwightman/pytorch-image-models/blob/main/timm/models/vision_transformer.py
@@ -580,8 +583,7 @@ def _create_vision_transformer(variant, pretrained=False, **kwargs):
 
     model = build_model_with_cfg(
         VisionTransformer, variant, pretrained,
-        default_cfg=pretrained_cfg, ##############################################
-        # pretrained_cfg = pretrained_cfg,
+        default_cfg=pretrained_cfg,
         representation_size=repr_size,
         pretrained_filter_fn=checkpoint_filter_fn,
         pretrained_custom_load='npz' in pretrained_cfg['url'],
