@@ -1,0 +1,13 @@
+# SSiT Pretrain configuration (don't mess with it!)
+arch: ViT-S-p16
+checkpoint: checkpoints/pretrained_vits_imagenet_initialized.pt
+checkpoint-key: base_encoder
+input_size: 384
+linear-key: head
+
+# INITIAL SETTINGS
+num_classes: 5
+
+
+
+# ===== Experiment Setup =====

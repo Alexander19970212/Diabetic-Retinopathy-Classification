@@ -1,0 +1,105 @@
+# ===== Visual Extractor Configs =====
+resnet50:
+  features_dim: 2048
+  input_size: 224
+  layer_keys:
+  - fc
+  weights: IMAGENET1K_V2
+
+resnet101:
+  features_dim: 2048
+  input_size: 224
+  layer_keys:
+  - fc
+  weights: IMAGENET1K_V2
+
+resnext50:
+  features_dim: 2048
+  input_size: 224
+  layer_keys:
+  - fc
+  weights: IMAGENET1K_V2
+
+resnext101:
+  features_dim: 2048
+  input_size: 224
+  layer_keys:
+  - fc
+  weights: IMAGENET1K_V2
+
+swin_t:
+  features_dim: 768
+  input_size: 256
+  layer_keys:
+  - head
+  weights: DEFAULT
+
+swin_s:
+  features_dim: 768
+  input_size: 256
+  layer_keys:
+  - head
+  weights: DEFAULT
+
+swin_b:
+  features_dim: 1024
+  input_size: 256
+  layer_keys:
+  - head
+  weights: DEFAULT
+
+vit_b:
+  features_dim: 768
+  input_size: 224
+  layer_keys:
+  - heads
+  weights: DEFAULT
+
+vit_l:
+  features_dim: 1024
+  input_size: 224
+  layer_keys:
+  - heads
+  weights: DEFAULT
+
+vgg16:
+  features_dim: 25088
+  input_size: 224
+  layer_keys:
+  - classifier
+  weights: IMAGENET1K_FEATURES  # features only
+
+vgg16_bn:
+  features_dim: 25088
+  input_size: 224
+  layer_keys:
+  - classifier
+  weights: IMAGENET1K_V1  # features only
+
+efficientnet_s:
+  features_dim: 1280
+  input_size: 384
+  layer_keys:
+  - classifier
+  weights: DEFAULT
+
+efficientnet_m:
+  features_dim: 1280
+  input_size: 384
+  layer_keys:
+  - classifier
+  weights: DEFAULT
+
+efficientnet_l:
+  features_dim: 1280
+  input_size: 384
+  layer_keys:
+  - classifier
+  weights: DEFAULT
+
+inception:
+  features_dim: 2048
+  input_size: 299
+  layer_keys:
+  - fc
+  weights: DEFAULT
