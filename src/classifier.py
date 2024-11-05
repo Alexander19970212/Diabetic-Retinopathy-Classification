@@ -3,10 +3,8 @@ from .external import FeatureExtractor
 from .utils import load_config
 
 import torch
-from torch import dropout, nn
+from torch import nn
 import torch.nn.functional as F
-
-from src import SSiT
 
 
 class AttentionHead(nn.Module):
@@ -125,6 +123,10 @@ class Classifier(nn.Module):
                 weights=self.external_config['weights']
             )
 
+            if self.config['freeze_external']:
+                for param in self.feature_extractor.parameters():
+                    param.requires_grad = False
+
         # load SSiT model if needed
         if self.config['mode'] in ['SSiT_only', 'attention']:
             self.SSiT_config = load_config(SSiT_config)
@@ -138,7 +140,11 @@ class Classifier(nn.Module):
                 linear_key=self.SSiT_config['linear_key'],
                 global_pool=self.SSiT_config['global_pool'],
                 feat_concat=self.SSiT_config['feat_concat']
-        )
+            )
+
+            if self.config['freeze_SSiT']:
+                for param in self.SSiT.parameters():
+                    param.requires_grad = False
 
         # build classifier
         if self.config['mode'] == 'SSiT_only':
