@@ -1,0 +1,6 @@
+# ===== Classifier Configs: Copy/Paste default and change appropriately =====
+num_classes: 5
+num_heads: 4
+dropout: 0.2
+external_arch: resnet50
+mode: attention # attention, SSiT_only, external_only

@@ -22,24 +22,24 @@ archs = {
 
 
 class FeatureExtractor(nn.Module):
-    def __init__(self, arch, config='configs/external.yaml'):
+    def __init__(self, arch, features_dim, input_size, layer_keys, weights):
         super().__init__()
 
         assert arch in archs.keys(), 'Not implemented architecture.'
-        with open(config) as file:
-            self.config = yaml.safe_load(file)[arch]
 
-        self.input_size = self.config['input_size']
-        self.features_dim = self.config['features_dim']
+        self.input_size = input_size
+        self.features_dim = features_dim
+        self.layer_keys = layer_keys
+        self.weights = weights
 
         # load model
-        self.model = archs[arch](weights=self.config['weights'])
+        self.model = archs[arch](weights=self.weights)
 
         # cut layers
-        if not self.config['layer_keys']:
+        if not self.layer_keys:
             return
 
-        for layer_key in self.config['layer_keys']:
+        for layer_key in self.layer_keys:
             setattr(self.model, layer_key, nn.Identity())
 
     def forward(self, X):
