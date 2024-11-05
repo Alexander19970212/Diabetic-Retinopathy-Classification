@@ -134,8 +134,10 @@ class Classifier(nn.Module):
                 features_dim=self.SSiT_config['features_dim'],
                 input_size=self.SSiT_config['input_size'],
                 checkpoint=self.SSiT_config['checkpoint'],
-                checkpoint_key=self.SSiT_config['checkpoint-key'],
-                linear_key=self.SSiT_config['linear-key']
+                checkpoint_key=self.SSiT_config['checkpoint_key'],
+                linear_key=self.SSiT_config['linear_key'],
+                global_pool=self.SSiT_config['global_pool'],
+                feat_concat=self.SSiT_config['feat_concat']
         )
 
         # build classifier
