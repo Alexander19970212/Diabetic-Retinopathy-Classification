@@ -6,10 +6,12 @@ from sklearn.model_selection import train_test_split
 from tqdm.contrib.concurrent import process_map
 
 import os
+import json
 import argparse
 from functools import partial
 
 from utils import load_image, get_mask, get_bbox, squarify, imsave
+from stats import distributed_statistics, lazy_loader
 
 
 parser = argparse.ArgumentParser()
@@ -32,7 +34,7 @@ def main():
 
     # create output directories
     root = args.output_folder
-    train_dir, test_dir, val_dir = map(lambda x: os.path.join(root, x), ['train', 'test', 'val'])
+    train_dir, test_dir, val_dir = map(lambda x: os.path.join(root, x), ['train', 'test', 'valid'])
     unique_classes = np.unique(y_train)
     for path in [train_dir, test_dir, val_dir]:
         if not os.path.exists(path):
@@ -57,8 +59,11 @@ def main():
             desc=f'Processing <{os.path.basename(out_dir)}> subset'
         )
 
-
-
+    # calculate and save train stats
+    mean, std = distributed_statistics(lazy_loader(train_dir))
+    print(f"MEAN:\n\t{mean}\nSTD:\n\t{std}")
+    with open(os.path.join(root, 'stats.json'), 'w') as f:
+        json.dump({'mean': mean.tolist(), 'std': std.tolist()}, f)
 
 
 def scan_dataset(root):
