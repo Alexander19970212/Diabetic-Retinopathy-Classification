@@ -18,7 +18,7 @@ parser.add_argument('--output-folder', type=str, help='path to output folder')
 parser.add_argument('--max-size', type=int, default=512, help='maximum size of image')
 parser.add_argument('--cut-mode', type=str, default='max', help='cut mode for squarification')
 parser.add_argument('--test-size', type=float, default=0.15, help='test set size')
-parser.add_argument('--val-size', type=float, default=0.95, help='validation set size')
+parser.add_argument('--val-size', type=float, default=0.15, help='validation set size')
 parser.add_argument('--random-state', type=int, default=0xC0FFEE, help='random state for data splitting')
 parser.add_argument('--num_processes', type=int, default=8, help='number of processes to use')
 args = parser.parse_args()
@@ -40,20 +40,25 @@ def main():
             for label in unique_classes:
                 os.makedirs(os.path.join(path, str(label)), exist_ok=True)
 
-    # process training set
+    # process sets
     assert args.cut_mode in ['min', 'max'], "Invalid <cut-mode> argument; must be either <min> or <max>"
     args.cut_mode = min if args.cut_mode == 'min' else max
 
-    results = process_map(
-        partial(process_single, max_size=args.max_size, cut_mode=args.cut_mode),
-        X_train,
-        [os.path.join(train_dir, str(y), os.path.basename(x)) for x, y in zip(X_train, y_train)],
-        total=len(y_train),
-        max_workers=args.num_processes,
-        desc='Processing training set'
-    )
+    for X, y, out_dir in [
+        (X_train, y_train, train_dir),
+        (X_test, y_test, test_dir),
+        (X_val, y_val, val_dir)]:
+        process_map(
+            partial(process_single, max_size=args.max_size, cut_mode=args.cut_mode),
+            X,
+            [os.path.join(out_dir, str(y_), os.path.basename(x_)) for x_, y_ in zip(X, y)],
+            total=len(y),
+            max_workers=args.num_processes,
+            desc=f'Processing <{os.path.basename(out_dir)}> subset'
+        )
 
-    print(results)
+
+
 
 
 def scan_dataset(root):
@@ -134,7 +139,7 @@ def scan_dataset(root):
     return X_train, X_test, X_val, y_train, y_test, y_val
 
 
-def process_single(path, out_path, max_size=512, cut_mode=max):
+def process_single(path, out_path, shared_stats=None, max_size=512, cut_mode=max):
     # load & process & save image
     img = load_image(path)
     mask = get_mask(img)
@@ -142,10 +147,6 @@ def process_single(path, out_path, max_size=512, cut_mode=max):
     img = squarify(img, bbox, max_size, cut_mode)
     imsave(out_path, (img * 255.0).astype(np.uint8))
 
-    # get stats
-    mean = np.mean(img, axis=(0, 1))
-    std = np.std(img, axis=(0, 1))
-    return mean, std
 
 if __name__ == "__main__":
     main()
