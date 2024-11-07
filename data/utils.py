@@ -1,10 +1,12 @@
+from random import shuffle
 import numpy as np
 
 from skimage.filters import gaussian, threshold_mean
 from skimage.color import rgb2gray, gray2rgb
-from skimage.io import imread
+from skimage.io import imread, imsave
 from skimage.morphology import convex_hull_image
 from skimage.transform import resize, rescale
+
 
 
 def load_image(path):

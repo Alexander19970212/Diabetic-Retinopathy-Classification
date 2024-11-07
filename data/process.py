@@ -1,13 +1,15 @@
 #! /usr/bin/env python3
 
-from re import X
 import numpy as np
 import pandas as pd
+from sklearn.model_selection import train_test_split
+from tqdm.contrib.concurrent import process_map
 
 import os
 import argparse
+from functools import partial
 
-from utils import train_test_split
+from utils import load_image, get_mask, get_bbox, squarify, imsave
 
 
 parser = argparse.ArgumentParser()
@@ -16,8 +18,9 @@ parser.add_argument('--output-folder', type=str, help='path to output folder')
 parser.add_argument('--max-size', type=int, default=512, help='maximum size of image')
 parser.add_argument('--cut-mode', type=str, default='max', help='cut mode for squarification')
 parser.add_argument('--test-size', type=float, default=0.15, help='test set size')
-parser.add_argument('--val-size', type=float, default=0.15, help='validation set size')
+parser.add_argument('--val-size', type=float, default=0.95, help='validation set size')
 parser.add_argument('--random-state', type=int, default=0xC0FFEE, help='random state for data splitting')
+parser.add_argument('--num_processes', type=int, default=8, help='number of processes to use')
 args = parser.parse_args()
 
 
@@ -27,6 +30,30 @@ def main():
 
     X_train, X_test, X_val, y_train, y_test, y_val = scan_dataset(root)
 
+    # create output directories
+    root = args.output_folder
+    train_dir, test_dir, val_dir = map(lambda x: os.path.join(root, x), ['train', 'test', 'val'])
+    unique_classes = np.unique(y_train)
+    for path in [train_dir, test_dir, val_dir]:
+        if not os.path.exists(path):
+            os.makedirs(path, exist_ok=True)
+            for label in unique_classes:
+                os.makedirs(os.path.join(path, str(label)), exist_ok=True)
+
+    # process training set
+    assert args.cut_mode in ['min', 'max'], "Invalid <cut-mode> argument; must be either <min> or <max>"
+    args.cut_mode = min if args.cut_mode == 'min' else max
+
+    results = process_map(
+        partial(process_single, max_size=args.max_size, cut_mode=args.cut_mode),
+        X_train,
+        [os.path.join(train_dir, str(y), os.path.basename(x)) for x, y in zip(X_train, y_train)],
+        total=len(y_train),
+        max_workers=args.num_processes,
+        desc='Processing training set'
+    )
+
+    print(results)
 
 
 def scan_dataset(root):
@@ -70,25 +97,33 @@ def scan_dataset(root):
         X_train, X_test, y_train, y_test = train_test_split(
             X_train, y_train,
             test_size=args.test_size+args.val_size,
-            random_state=args.random_state
+            shuffle=True,
+            random_state=args.random_state,
+            stratify=y_train
         )
 
         X_test, X_val, y_test, y_val = train_test_split(
             X_test, y_test,
             test_size=args.val_size / (args.test_size + args.val_size),
-            random_state=args.random_state
+            shuffle=True,
+            random_state=args.random_state,
+            stratify=y_test
         )
     elif test_dir is None:
         X_train, X_test, y_train, y_test = train_test_split(
             X_train, y_train,
             test_size=args.test_size,
-            random_state=args.random_state
+            shuffle=True,
+            random_state=args.random_state,
+            stratify=y_train
         )
     elif val_dir is None:
         X_train, X_val, y_train, y_val = train_test_split(
             X_train, y_train,
             test_size=args.val_size,
-            random_state=args.random_state
+            shuffle=True,
+            random_state=args.random_state,
+            stratify=y_train
         )
 
 
@@ -98,6 +133,19 @@ def scan_dataset(root):
 
     return X_train, X_test, X_val, y_train, y_test, y_val
 
+
+def process_single(path, out_path, max_size=512, cut_mode=max):
+    # load & process & save image
+    img = load_image(path)
+    mask = get_mask(img)
+    bbox = get_bbox(mask)
+    img = squarify(img, bbox, max_size, cut_mode)
+    imsave(out_path, (img * 255.0).astype(np.uint8))
+
+    # get stats
+    mean = np.mean(img, axis=(0, 1))
+    std = np.std(img, axis=(0, 1))
+    return mean, std
 
 if __name__ == "__main__":
     main()
