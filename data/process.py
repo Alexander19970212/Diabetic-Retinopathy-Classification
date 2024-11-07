@@ -22,7 +22,7 @@ parser.add_argument('--cut-mode', type=str, default='max', help='cut mode for sq
 parser.add_argument('--test-size', type=float, default=0.15, help='test set size')
 parser.add_argument('--val-size', type=float, default=0.15, help='validation set size')
 parser.add_argument('--random-state', type=int, default=0xC0FFEE, help='random state for data splitting')
-parser.add_argument('--num_processes', type=int, default=8, help='number of processes to use')
+parser.add_argument('--num-processes', type=int, default=8, help='number of processes to use')
 args = parser.parse_args()
 
 
