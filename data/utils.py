@@ -15,7 +15,8 @@ def load_image(path):
 def get_mask(img, downscale_factor=0.25):
     gray = rgb2gray(img)
     blurred = gaussian(rescale(gray, downscale_factor), sigma=2)
-    thresh = 0.1 # threshold_mean(blurred)
+    # thresh = 0.05 # threshold_mean(blurred)
+    thresh = blurred[5:15, 5:15].mean() * 1.5 # a sample of a background
     return resize(convex_hull_image(blurred > thresh), gray.shape)
 
 

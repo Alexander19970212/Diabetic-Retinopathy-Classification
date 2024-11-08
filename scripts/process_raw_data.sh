@@ -7,7 +7,7 @@ MAX_SIZE=512
 CUT_MODE="max"
 TEST_SIZE=0.15
 VAL_SIZE=0.15
-NUM_PROCESSES=16
+NUM_PROCESSES=8
 declare -i RANDOM_STATE=0xC0FFEE  # to preserve hexadecimal format
 
 

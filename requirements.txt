@@ -1,10 +1,8 @@
+# TODO: Separate SSiT requirements from ours; check everything!
 gdown
 matplotlib==3.5.1
-numpy
-opencv_python==4.5.5.64
-opencv-contrib-python==4.6.0.66
+numpy==1.26.4
 tqdm==4.64.0
-pillow
 torchvision
 datasets
 timm==0.5.4
