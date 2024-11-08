@@ -166,7 +166,7 @@ def scan_dataset(root, test_size=0.15, val_size=0.15, random_state=0xC0FFEE):
     return X_train, X_test, X_val, y_train, y_test, y_val
 
 
-def process_single(path, out_path, shared_stats=None, max_size=512, cut_mode=max):
+def process_single(path, out_path, max_size=512, cut_mode=max):
     # load & process & save image
     try:
         img = load_image(path)

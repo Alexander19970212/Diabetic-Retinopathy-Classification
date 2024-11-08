@@ -30,7 +30,7 @@
 
 
 
-OUTPUT_DIR="datasets"
+OUTPUT_DIR="datasets_raw"
 USE_GDOWN=false
 mkdir -p ${OUTPUT_DIR}
 

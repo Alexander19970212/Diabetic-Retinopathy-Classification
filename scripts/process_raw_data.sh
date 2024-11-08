@@ -1,8 +1,8 @@
 #! /bin/bash
 
 
-DATA_DIR="datasets"
-PROCESSED_DIR="datasets/processed"
+DATA_DIR="datasets_raw"
+PROCESSED_DIR="datasets"
 MAX_SIZE=512
 CUT_MODE="max"
 TEST_SIZE=0.15
