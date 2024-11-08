@@ -8,29 +8,41 @@ from tqdm.contrib.concurrent import process_map
 import os
 import json
 import argparse
+from sys import stderr
 from functools import partial
 
-from utils import load_image, get_mask, get_bbox, squarify, imsave
-from stats import distributed_statistics, lazy_loader
+try:
+    from utils import load_image, get_mask, get_bbox, squarify, imsave
+    from stats import distributed_statistics, lazy_loader
+except ImportError:
+    from .utils import load_image, get_mask, get_bbox, squarify, imsave
+    from .stats import distributed_statistics, lazy_loader
 
-
-parser = argparse.ArgumentParser()
-parser.add_argument('--image-folder', type=str, help='path to raw dataset')
-parser.add_argument('--output-folder', type=str, help='path to output folder')
-parser.add_argument('--max-size', type=int, default=512, help='maximum size of image')
-parser.add_argument('--cut-mode', type=str, default='max', help='cut mode for squarification')
-parser.add_argument('--test-size', type=float, default=0.15, help='test set size')
-parser.add_argument('--val-size', type=float, default=0.15, help='validation set size')
-parser.add_argument('--random-state', type=int, default=0xC0FFEE, help='random state for data splitting')
-parser.add_argument('--num-processes', type=int, default=8, help='number of processes to use')
-args = parser.parse_args()
 
 
 def main():
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--image-folder', type=str, help='path to raw dataset')
+    parser.add_argument('--output-folder', type=str, help='path to output folder')
+    parser.add_argument('--max-size', type=int, default=512, help='maximum size of image')
+    parser.add_argument('--cut-mode', type=str, default='max', help='cut mode for squarification')
+    parser.add_argument('--test-size', type=float, default=0.15, help='test set size')
+    parser.add_argument('--val-size', type=float, default=0.15, help='validation set size')
+    parser.add_argument('--random-state', type=int, default=0xC0FFEE, help='random state for data splitting')
+    parser.add_argument('--num-processes', type=int, default=8, help='number of processes to use')
+    args = parser.parse_args()
+
+
     root = args.image_folder
     print(f'Processing {os.path.basename(root).upper()} dataset...')
 
-    X_train, X_test, X_val, y_train, y_test, y_val = scan_dataset(root)
+    X_train, X_test, X_val, y_train, y_test, y_val = scan_dataset(
+        root,
+        test_size=args.test_size,
+        val_size=args.val_size,
+        random_state=args.random_state
+    )
 
     # create output directories
     root = args.output_folder
@@ -55,8 +67,9 @@ def main():
             X,
             [os.path.join(out_dir, str(y_), os.path.basename(x_)) for x_, y_ in zip(X, y)],
             total=len(y),
+            desc=f'Processing <{os.path.basename(out_dir)}> subset',
             max_workers=args.num_processes,
-            desc=f'Processing <{os.path.basename(out_dir)}> subset'
+            chunksize=1
         )
 
     # calculate and save train stats
@@ -66,7 +79,7 @@ def main():
         json.dump({'mean': mean.tolist(), 'std': std.tolist()}, f)
 
 
-def scan_dataset(root):
+def scan_dataset(root, test_size=0.15, val_size=0.15, random_state=0xC0FFEE):
     # load training set from the raw dataset
     train_dir = os.path.join(root, 'train')
     if not os.path.exists(train_dir) or not os.path.isdir(train_dir) or \
@@ -78,6 +91,9 @@ def scan_dataset(root):
         lambda x: os.path.join(train_dir, x)
     ).values, train_info['label'].values
 
+    mask = ~np.isnan(y_train)
+    X_train, y_train = X_train[mask], y_train[mask].astype(int)
+
     # check for missing directories
     test_dir = os.path.join(root, 'test')
     if os.path.exists(test_dir) and os.path.isdir(test_dir) and \
@@ -86,6 +102,9 @@ def scan_dataset(root):
         X_test, y_test = test_info['filename'].apply(
             lambda x: os.path.join(test_dir, x)
         ).values, test_info['label'].values
+
+        mask = ~np.isnan(y_test)
+        X_test, y_test = X_test[mask], y_test[mask].astype(int)
     else:
         test_dir = None
         print("\tTest set: not found; creating split...")
@@ -97,6 +116,9 @@ def scan_dataset(root):
         X_val, y_val = val_info['filename'].apply(
             lambda x: os.path.join(val_dir, x)
         ).values, val_info['label'].values
+
+        mask = ~np.isnan(y_val)
+        X_val, y_val = X_val[mask], y_val[mask].astype(int)
     else:
         val_dir = None
         print("\tValidation set: not found; creating split...")
@@ -106,33 +128,33 @@ def scan_dataset(root):
     if test_dir is None and val_dir is None:
         X_train, X_test, y_train, y_test = train_test_split(
             X_train, y_train,
-            test_size=args.test_size+args.val_size,
+            test_size=test_size+val_size,
             shuffle=True,
-            random_state=args.random_state,
+            random_state=random_state,
             stratify=y_train
         )
 
         X_test, X_val, y_test, y_val = train_test_split(
             X_test, y_test,
-            test_size=args.val_size / (args.test_size + args.val_size),
+            test_size=val_size / (test_size + val_size),
             shuffle=True,
-            random_state=args.random_state,
+            random_state=random_state,
             stratify=y_test
         )
     elif test_dir is None:
         X_train, X_test, y_train, y_test = train_test_split(
             X_train, y_train,
-            test_size=args.test_size,
+            test_size=test_size,
             shuffle=True,
-            random_state=args.random_state,
+            random_state=random_state,
             stratify=y_train
         )
     elif val_dir is None:
         X_train, X_val, y_train, y_val = train_test_split(
             X_train, y_train,
-            test_size=args.val_size,
+            test_size=val_size,
             shuffle=True,
-            random_state=args.random_state,
+            random_state=random_state,
             stratify=y_train
         )
 
@@ -146,12 +168,16 @@ def scan_dataset(root):
 
 def process_single(path, out_path, shared_stats=None, max_size=512, cut_mode=max):
     # load & process & save image
-    img = load_image(path)
-    mask = get_mask(img)
-    bbox = get_bbox(mask)
-    img = squarify(img, bbox, max_size, cut_mode)
-    imsave(out_path, (img * 255.0).astype(np.uint8))
-
+    try:
+        img = load_image(path)
+        mask = get_mask(img)
+        bbox = get_bbox(mask)
+        img = squarify(img, bbox, max_size, cut_mode)
+        imsave(out_path, (img * 255.0).astype(np.uint8))
+    except Exception as error:
+        print(f'Error: file {path} was not processed.', file=stderr)
+        print(f'\tSupposed output path: {out_path}', file=stderr)
+        print(f'\tError message:\n{error}', end='\n\n', file=stderr)
 
 if __name__ == "__main__":
     main()

@@ -1,12 +1,10 @@
-from random import shuffle
 import numpy as np
 
-from skimage.filters import gaussian, threshold_mean
+from skimage.filters import gaussian#, threshold_mean
 from skimage.color import rgb2gray, gray2rgb
 from skimage.io import imread, imsave
 from skimage.morphology import convex_hull_image
 from skimage.transform import resize, rescale
-
 
 
 def load_image(path):
@@ -16,8 +14,8 @@ def load_image(path):
 
 def get_mask(img, downscale_factor=0.25):
     gray = rgb2gray(img)
-    blurred = gaussian(rescale(gray, downscale_factor), sigma=1)
-    thresh = threshold_mean(blurred)
+    blurred = gaussian(rescale(gray, downscale_factor), sigma=2)
+    thresh = 0.1 # threshold_mean(blurred)
     return resize(convex_hull_image(blurred > thresh), gray.shape)
 
 
@@ -32,7 +30,9 @@ def get_bbox(binary_mask):
 
 
 def squarify(img, bbox, max_size=512, cut_mode=max):
-    rmin, rmax, cmin, cmax = bbox
+    # make sure the cut is even (a stupid solution to keep simpicity)
+    rmin, rmax, cmin, cmax = map(lambda x: x - x % 2, bbox)
+
     size = cut_mode(rmax - rmin, cmax - cmin)
     max_size = min(size, max_size)
 

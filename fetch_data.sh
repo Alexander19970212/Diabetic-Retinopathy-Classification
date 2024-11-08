@@ -12,7 +12,7 @@
 #   - Download and put all 10 .zip parts in the OUTPUT_DIR.                                    #
 #                                                                                              #
 # * Messidor-2 Dataset:                                                                        #
-#   - https://drive.google.com/drive/folders/1PDDMiKTFcZCHmhtgxwBqDFxl8gJaSQX_?usp=drive_link  #
+#   - https://drive.google.com/file/d/14g-A1rce9a-NwIx8CPYxRyrT7ZJ7vSlM/view?usp=drive_link    #
 #   - Download everything from this folder and put .csv and .zip files                         #
 #     in the OUTPUT_DIR.                                                                       #
 #                                                                                              #
@@ -73,21 +73,18 @@ fi
 if [ ! -d "${OUTPUT_DIR}/Messidor" ]; then
     if $USE_GDOWN; then
         # download parts from the Google Drive
-        GDRIVE_LINK="1PDDMiKTFcZCHmhtgxwBqDFxl8gJaSQX_"
+        GDRIVE_LINK="14g-A1rce9a-NwIx8CPYxRyrT7ZJ7vSlM"
         gdown --folder "${GDRIVE_LINK}" -O "${OUTPUT_DIR}"
     fi
 
-    # merge and unzip
-    cat "${OUTPUT_DIR}"/IMAGES.zip* > "${OUTPUT_DIR}"/IMAGES.zip
-    unzip "${OUTPUT_DIR}"/IMAGES.zip -d "${OUTPUT_DIR}"
+    # unzip
+    unzip "${OUTPUT_DIR}"/messidor2.zip -d "${OUTPUT_DIR}"
+    rm "${OUTPUT_DIR}"/messidor2.zip
 
     # cleanup
-    mkdir -p "${OUTPUT_DIR}"/Messidor
-    mv "${OUTPUT_DIR}"/IMAGES "${OUTPUT_DIR}"/Messidor/train
-    mv "${OUTPUT_DIR}"/messidor_data.csv "${OUTPUT_DIR}"/Messidor/train_tmp.csv
-
-    rm -r "${OUTPUT_DIR}"/IMAGES*
-    rm "${OUTPUT_DIR}"/messidor_readme.txt "${OUTPUT_DIR}"/messidor-2.csv
+    mv "${OUTPUT_DIR}"/messidor-2 "${OUTPUT_DIR}"/Messidor
+    mv "${OUTPUT_DIR}"/Messidor/images "${OUTPUT_DIR}"/Messidor/train
+    mv "${OUTPUT_DIR}"/Messidor/messidor_data.csv "${OUTPUT_DIR}"/Messidor/train_tmp.csv
 
     # fix labels format
     echo "filename,label" > ${OUTPUT_DIR}/Messidor/train.csv

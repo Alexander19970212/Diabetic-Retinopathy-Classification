@@ -6,10 +6,10 @@ from skimage.color import gray2rgb
 
 import os
 
-
-def load_image(path):
-    img = imread(path) / 255.0
-    return img if img.shape[-1] == 3 else gray2rgb(img)
+try:
+    from utils import load_image
+except ImportError:
+    from .utils import load_image
 
 
 def distributed_statistics(iterable):
