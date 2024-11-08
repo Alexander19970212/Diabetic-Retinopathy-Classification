@@ -13,8 +13,7 @@
 #                                                                                              #
 # * Messidor-2 Dataset:                                                                        #
 #   - https://drive.google.com/file/d/14g-A1rce9a-NwIx8CPYxRyrT7ZJ7vSlM/view?usp=drive_link    #
-#   - Download everything from this folder and put .csv and .zip files                         #
-#     in the OUTPUT_DIR.                                                                       #
+#   - Download and put the single .zip file in the OUTPUT_DIR.                                 #
 #                                                                                              #
 # * APTOS Dataset:                                                                             #
 #   - https://drive.google.com/file/d/1ERTxRtRs4hM65i-myBN5g1uBEEk7FLxf/view?usp=drive_link    #
@@ -74,7 +73,7 @@ if [ ! -d "${OUTPUT_DIR}/Messidor" ]; then
     if $USE_GDOWN; then
         # download parts from the Google Drive
         GDRIVE_LINK="14g-A1rce9a-NwIx8CPYxRyrT7ZJ7vSlM"
-        gdown --folder "${GDRIVE_LINK}" -O "${OUTPUT_DIR}"
+        gdown "${GDRIVE_LINK}" -O "${OUTPUT_DIR}"
     fi
 
     # unzip

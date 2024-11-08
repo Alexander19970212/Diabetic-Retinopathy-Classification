@@ -10,8 +10,8 @@ VAL_SIZE=0.15
 NUM_PROCESSES=16
 declare -i RANDOM_STATE=0xC0FFEE  # to preserve hexadecimal format
 
-# DATASETS=("IDRiD" "Messidor" "FGADR" "APTOS" "DDR")
-DATASETS=("DDR")
+
+DATASETS=("IDRiD" "Messidor" "FGADR" "APTOS" "DDR")
 
 
 for dataset in "${DATASETS[@]}"; do
