@@ -1,9 +1,0 @@
-# SSiT Pretrain configuration (don't mess with it!)
-arch: ViT-S-p16
-input_size: 384
-features_dim: 768 # if using feat_concat, else 384
-checkpoint: checkpoints/pretrained_vits_imagenet_initialized.pt
-checkpoint_key: base_encoder
-linear_key: head
-global_pool: 'token'
-feat_concat: True

@@ -1,3 +1,4 @@
+from unittest.mock import DEFAULT
 from torch import nn
 from torch.nn import functional as F
 from torchvision.models import (
@@ -10,6 +11,9 @@ from torchvision.models import (
     inception_v3,
 )
 
+from typing import List
+from dataclasses import dataclass, field
+
 archs = {
     'resnet50': resnet50, 'resnet101': resnet101,
     'resnext50': resnext50_32x4d, 'resnext101': resnext101_32x8d,
@@ -19,6 +23,16 @@ archs = {
     'efficientnet_s': efficientnet_v2_s, 'efficientnet_m': efficientnet_v2_m, 'efficientnet_l': efficientnet_v2_l,
     'inception': inception_v3
 }
+
+@dataclass
+class Config:
+    arch: str = 'resnet50'
+    features_dim: int = 2048
+    input_size: int = 224
+    layer_keys: List[str] = field(default_factory=lambda: ['fc'])
+    weights: str = 'IMAGENET1K_V2'
+
+DEFAULT_CONFIG = Config()
 
 
 class FeatureExtractor(nn.Module):

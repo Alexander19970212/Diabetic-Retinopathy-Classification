@@ -1,10 +1,15 @@
-from .SSiT import SSITEncoder
-from .external import FeatureExtractor
-from .utils import load_config
-
 import torch
 from torch import nn
 import torch.nn.functional as F
+
+from dataclasses import asdict
+
+try:
+    from .SSiT import SSITEncoder, DEFAULT_CONFIG as SSIT_DEFAULT_CONFIG
+    from .external import FeatureExtractor, DEFAULT_CONFIG as EXT_DEFAULT_CONFIG
+except ImportError:
+    from SSiT import SSITEncoder, DEFAULT_CONFIG as SSIT_DEFAULT_CONFIG
+    from external import FeatureExtractor, DEFAULT_CONFIG as EXT_DEFAULT_CONFIG
 
 
 class AttentionHead(nn.Module):
@@ -102,70 +107,58 @@ class AttentionClassifier(nn.Module):
 
 
 class Classifier(nn.Module):
-    def __init__(self,
-                 config='configs/classifier.yaml',
-                 external_config='configs/external.yaml',
-                 SSiT_config='configs/SSiT.yaml'):
+    def __init__(self, num_classes=5, num_heads=4, dropout=0.2,
+                 mode='attention', freeze_SSiT=False, freeze_external=False,
+                 external_config=EXT_DEFAULT_CONFIG, SSiT_config=SSIT_DEFAULT_CONFIG):
+
         super().__init__()
 
-        # load configuration file
-        self.config = load_config(config)
+        self.num_classes = num_classes
+        self.num_heads = num_heads
+        self.dropout = dropout
+        self.mode = mode
+        self.freeze_SSiT = freeze_SSiT
+        self.freeze_external = freeze_external
+
 
         # load external model if needed
-        if self.config['mode'] in ['external_only', 'attention']:
-            self.external_config = load_config(external_config)[self.config['external_arch']]
+        if self.mode in ['external_only', 'attention']:
+            self.external_config = external_config
+            self.feature_extractor = FeatureExtractor(**asdict(self.external_config))
 
-            self.feature_extractor = FeatureExtractor(
-                arch=self.config['external_arch'],
-                features_dim=self.external_config['features_dim'],
-                input_size=self.external_config['input_size'],
-                layer_keys=self.external_config['layer_keys'],
-                weights=self.external_config['weights']
-            )
-
-            if self.config['freeze_external']:
+            if self.freeze_external:
                 for param in self.feature_extractor.parameters():
                     param.requires_grad = False
 
         # load SSiT model if needed
-        if self.config['mode'] in ['SSiT_only', 'attention']:
-            self.SSiT_config = load_config(SSiT_config)
+        if self.mode in ['SSiT_only', 'attention']:
+            self.SSiT_config = SSiT_config
+            self.SSiT = SSITEncoder(**asdict(self.SSiT_config))
 
-            self.SSiT = SSITEncoder(
-                arch=self.SSiT_config['arch'],
-                features_dim=self.SSiT_config['features_dim'],
-                input_size=self.SSiT_config['input_size'],
-                checkpoint=self.SSiT_config['checkpoint'],
-                checkpoint_key=self.SSiT_config['checkpoint_key'],
-                linear_key=self.SSiT_config['linear_key'],
-                global_pool=self.SSiT_config['global_pool'],
-                feat_concat=self.SSiT_config['feat_concat']
-            )
-
-            if self.config['freeze_SSiT']:
+            if self.freeze_SSiT:
                 for param in self.SSiT.parameters():
                     param.requires_grad = False
 
         # build classifier
-        if self.config['mode'] == 'SSiT_only':
+        if self.mode == 'SSiT_only':
             self.classifier = LinearClassifier(
                 model=self.SSiT,
-                num_classes=self.config['num_classes'],
-                features_dim=self.SSiT_config['features_dim']
+                num_classes=self.num_classes,
+                features_dim=self.SSiT_config.features_dim
             )
-        elif self.config['mode'] == 'external_only':
+        elif self.mode == 'external_only':
             self.classifier = LinearClassifier(
                 model=self.feature_extractor,
-                num_classes=self.config['num_classes'],
-                features_dim=self.external_config['features_dim']
+                num_classes=self.num_classes,
+                features_dim=self.external_config.features_dim
             )
-        elif self.config['mode'] == 'attention':
+        elif self.mode == 'attention':
             self.classifier = AttentionClassifier(
-                num_classes=self.config['num_classes'],
+                num_classes=self.num_classes,
                 backbone=self.SSiT,
                 external=self.feature_extractor,
-                num_heads=self.config['num_heads'],
-                dropout=self.config['dropout']
+                num_heads=self.num_heads,
+                dropout=self.dropout
             )
         else:
             raise ValueError(f"Invalid mode: {self.config['mode']}")

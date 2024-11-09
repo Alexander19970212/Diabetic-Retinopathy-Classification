@@ -1,8 +1,9 @@
-from pyexpat import features
+from tabnanny import check
 import torch
 from torch import nn
 from torch.nn import functional as F
 
+from dataclasses import dataclass
 import sys
 
 old_path = sys.path
@@ -10,6 +11,19 @@ sys.path.append('src/SSiT')
 sys.path.append('SSiT')
 from . import vits, funcs
 sys.path = old_path
+
+
+@dataclass
+class Config:
+    arch: str = 'ViT-S-p16'
+    input_size: int = 384
+    features_dim: int = 768
+    checkpoint: str = 'checkpoints/pretrained_vits_imagenet_initialized.pt'
+    checkpoint_key: str = 'base_encoder'
+    linear_key: str = 'head'
+    global_pool: str = 'token'
+    feat_concat: bool = True
+DEFAULT_CONFIG = Config()
 
 
 class SSITEncoder(nn.Module):
