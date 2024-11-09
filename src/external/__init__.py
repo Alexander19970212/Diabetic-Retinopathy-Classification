@@ -1,4 +1,5 @@
 from torch import nn
+from torch.nn import functional as F
 from torchvision.models import (
     resnet50, resnet101,
     resnext50_32x4d, resnext101_32x8d,
@@ -8,7 +9,6 @@ from torchvision.models import (
     efficientnet_v2_s, efficientnet_v2_m, efficientnet_v2_l,
     inception_v3,
 )
-import yaml
 
 archs = {
     'resnet50': resnet50, 'resnet101': resnet101,
@@ -43,6 +43,7 @@ class FeatureExtractor(nn.Module):
             setattr(self.model, layer_key, nn.Identity())
 
     def forward(self, X):
+        X = F.interpolate(X, size=self.input_size)
         model_output = self.model(X)
         if getattr(model_output, 'logits', None) is not None:
             return model_output.logits

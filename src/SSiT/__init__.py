@@ -1,6 +1,7 @@
 from pyexpat import features
 import torch
 from torch import nn
+from torch.nn import functional as F
 
 import sys
 
@@ -55,5 +56,6 @@ class SSITEncoder(nn.Module):
         return x if pre_logits else self.model.head(x)
 
     def forward(self, X):
+        X = F.interpolate(X, size=self.input_size)
         features = self.model.forward_features(X)
         return self._forward_head(features, pre_logits=True)

@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 import albumentations as A
 from albumentations.pytorch import ToTensorV2
@@ -15,6 +16,13 @@ DEFAULT_TRANSFORMS = A.Compose([
     A.VerticalFlip(p=0.5),
 
 ])
+
+
+def collate_fn(batch):
+    return {
+        'pixel_values': torch.stack([x['pixel_values'] for x in batch]),
+        'labels': torch.tensor([x['labels'] for x in batch])
+    }
 
 
 def get_transform(mean, std, mode='train', crop_size=512):
