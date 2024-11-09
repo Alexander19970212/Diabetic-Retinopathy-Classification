@@ -18,13 +18,6 @@ DEFAULT_TRANSFORMS = A.Compose([
 ])
 
 
-def collate_fn(batch):
-    return {
-        'pixel_values': torch.stack(batch['image']),
-        'labels': torch.tensor(batch['label'])
-    }
-
-
 def get_transform(mean, std, mode='train', crop_size=512):
 
     if mode == 'train':
@@ -42,13 +35,4 @@ def get_transform(mean, std, mode='train', crop_size=512):
     else:
         raise ValueError(f'Unknown transform mode: {mode}')
 
-
-    def batch_transform(example_batch):
-        return {
-            'image': [
-                transform(image=np.array(image))['image']
-                for image in example_batch['image']
-            ],
-            'label': example_batch['label']
-        }
-    return batch_transform
+    return lambda x: transform(image=np.array(x))['image']
