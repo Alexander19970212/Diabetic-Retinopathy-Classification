@@ -73,10 +73,10 @@ def main():
         )
 
     # calculate and save train stats
-    mean, std = distributed_statistics(lazy_loader(train_dir))
-    print(f"MEAN:\n\t{mean}\nSTD:\n\t{std}")
+    mean, var = distributed_statistics(lazy_loader(train_dir))
+    print(f"MEAN:\t{mean}\nVAR:\t{var}\nSTD:\t{np.sqrt(var)}")
     with open(os.path.join(root, 'stats.json'), 'w') as f:
-        json.dump({'mean': mean.tolist(), 'std': std.tolist()}, f)
+        json.dump({'mean': mean.tolist(), 'var': var.tolist(), 'std': np.sqrt(var).tolist()}, f)
 
 
 def scan_dataset(root, test_size=0.15, val_size=0.15, random_state=0xC0FFEE):
