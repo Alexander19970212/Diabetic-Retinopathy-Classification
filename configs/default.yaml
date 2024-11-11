@@ -1,25 +1,41 @@
+name: DDR+attention+resnext101_frozen
+random_seed: 0xC0FFEE
+
 # ===== Data Configs: Copy/Paste default and change appropriately =====
 dataset:
-  path: datasets/IDRiD
-  size: 512
+  path: datasets/DDR
+  batch_size: 16
+  size: 384
+  num_workers: 8
+
+
+# ===== Optimizer Configs: Copy/Paste default and change appropriately =====
+optimizer:
+  lr: 0.0003
+  weight_decay: 0.1
+  total_iters: 50
+  start_factor: 0.1
+  end_factor: 1.0
 
 
 # ===== Trainer Configs: Copy/Paste default and change appropriately =====
-training_args:
-  output_dir: 'results'
-  per_device_train_batch_size: 8
-  evaluation_strategy: 'steps'
-  num_train_epochs: 10
-  fp16: True
-  save_steps: 100
-  eval_steps: 100
-  logging_steps: 10
-  learning_rate: 2e-4
-  save_total_limit: 2
-  remove_unused_columns: True
-  load_best_model_at_end: True
-  push_to_hub: False
-  report_to: 'tensorboard'
+# params can be found here: https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html
+trainer:
+  max_epochs: 200
+  deterministic: True
+  fast_dev_run: False # set to integer for testing purposes (or False)
+
+  accelerator: gpu
+  devices: 1
+  # profiler: simple
+
+  precision: 32
+  gradient_clip_val: 1.0  # GradScaler
+  num_sanity_val_steps: 0
+  check_val_every_n_epoch: 1
+  log_every_n_steps: 1
+  enable_checkpointing: True
+
 
 
 # ===== Classifier Configs: Copy/Paste default and change appropriately =====
@@ -27,10 +43,10 @@ classifier:
   num_classes: 5
   num_heads: 4
   dropout: 0.2
-  external_arch: resnet50
-  mode: external_only # attention, SSiT_only, external_only
-  freeze_SSiT: False
-  freeze_external: False
+  external_arch: resnext101
+  mode: attention # attention, SSiT_only, external_only
+  freeze_SSiT: True
+  freeze_external: True
 
 
 # ===== SSiT Configs: probably no need to change (except for feat_concat/global_pool?) =====
@@ -46,108 +62,4 @@ SSiT:
 
 
 # ===== Visual Extractor Configs: probably no need to change =====
-feature_extractor:
-  resnet50:
-    features_dim: 2048
-    input_size: 224
-    layer_keys:
-    - fc
-    weights: IMAGENET1K_V2
-
-  resnet101:
-    features_dim: 2048
-    input_size: 224
-    layer_keys:
-    - fc
-    weights: IMAGENET1K_V2
-
-  resnext50:
-    features_dim: 2048
-    input_size: 224
-    layer_keys:
-    - fc
-    weights: IMAGENET1K_V2
-
-  resnext101:
-    features_dim: 2048
-    input_size: 224
-    layer_keys:
-    - fc
-    weights: IMAGENET1K_V2
-
-  swin_t:
-    features_dim: 768
-    input_size: 256
-    layer_keys:
-    - head
-    weights: DEFAULT
-
-  swin_s:
-    features_dim: 768
-    input_size: 256
-    layer_keys:
-    - head
-    weights: DEFAULT
-
-  swin_b:
-    features_dim: 1024
-    input_size: 256
-    layer_keys:
-    - head
-    weights: DEFAULT
-
-  vit_b:
-    features_dim: 768
-    input_size: 224
-    layer_keys:
-    - heads
-    weights: DEFAULT
-
-  vit_l:
-    features_dim: 1024
-    input_size: 224
-    layer_keys:
-    - heads
-    weights: DEFAULT
-
-  vgg16:
-    features_dim: 25088
-    input_size: 224
-    layer_keys:
-    - classifier
-    weights: IMAGENET1K_FEATURES  # features only
-
-  vgg16_bn:
-    features_dim: 25088
-    input_size: 224
-    layer_keys:
-    - classifier
-    weights: IMAGENET1K_V1  # features only
-
-  efficientnet_s:
-    features_dim: 1280
-    input_size: 384
-    layer_keys:
-    - classifier
-    weights: DEFAULT
-
-  efficientnet_m:
-    features_dim: 1280
-    input_size: 384
-    layer_keys:
-    - classifier
-    weights: DEFAULT
-
-  efficientnet_l:
-    features_dim: 1280
-    input_size: 384
-    layer_keys:
-    - classifier
-    weights: DEFAULT
-
-  inception:
-    features_dim: 2048
-    input_size: 299
-    layer_keys:
-    - fc
-    weights: DEFAULT
+ext_config_path: configs/feature_extractor_archs.yaml

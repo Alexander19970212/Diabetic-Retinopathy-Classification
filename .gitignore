@@ -1,8 +1,8 @@
 # Data-related
 datasets/
 datasets_raw/
-wandb/
 checkpoints/
+logs/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
