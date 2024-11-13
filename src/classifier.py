@@ -31,10 +31,20 @@ class AttentionHead(nn.Module):
             self.projector = nn.Linear(ext_features_dim, features_dim)
             self.projector_ext = nn.Linear(features_dim, ext_features_dim)
 
+            self.projection_dropout = nn.Dropout(dropout)
+
+            # Initialize layers
+            nn.init.xavier_uniform_(self.attention.in_proj_weight)
+            nn.init.xavier_uniform_(self.attention_ext.in_proj_weight)
+            nn.init.kaiming_normal_(self.projector.weight, nonlinearity='relu')
+            nn.init.kaiming_normal_(self.projector_ext.weight, nonlinearity='relu')
+            nn.init.zeros_(self.projector.bias)
+            nn.init.zeros_(self.projector_ext.bias)
+
 
         def forward(self, features, ext_features):
-            features_pr = F.relu(self.projector_ext(features))
-            ext_features_pr = F.relu(self.projector(ext_features))
+            features_pr = self.projection_dropout(F.relu(self.projector_ext(features)))
+            ext_features_pr = self.projection_dropout(F.relu(self.projector(ext_features)))
 
             attn, _ = self.attention(
                 # query, key, value
@@ -64,7 +74,7 @@ class AttentionHead(nn.Module):
             num_heads, dropout
         )
 
-        # replace it with your best classifier
+        # a simple classifier
         self.classifier = nn.Linear(features_dim + ext_features_dim, num_classes)
 
 
@@ -80,10 +90,11 @@ class LinearClassifier(nn.Module):
     def __init__(self, model, num_classes, features_dim):
         super().__init__()
         self.backbone = model
+        self.norm = nn.BatchNorm1d(features_dim)
         self.classifier = nn.Linear(features_dim, num_classes)
 
     def forward(self, X):
-        features = self.backbone(X)
+        features = self.norm(self.backbone(X))
         return self.classifier(features)
 
 
@@ -92,6 +103,11 @@ class AttentionClassifier(nn.Module):
         super().__init__()
         self.backbone = backbone
         self.external = external
+
+        # BatchNorm for each model’s features
+        self.ssit_norm = nn.LayerNorm(backbone.features_dim)
+        self.external_norm = nn.LayerNorm(external.features_dim)
+
         self.head = AttentionHead(
             num_classes=num_classes,
             features_dim=backbone.features_dim,
@@ -100,9 +116,16 @@ class AttentionClassifier(nn.Module):
             dropout=dropout
         )
 
+        # Initialize layers
+        nn.init.xavier_uniform_(self.head.classifier.weight)
+        nn.init.zeros_(self.head.classifier.bias)
+
     def forward(self, X):
-        features = self.backbone(X)
-        ext_features = self.external(X)
+        # Get features from each model and apply BatchNorm
+        features = self.ssit_norm(self.backbone(X))
+        ext_features = self.external_norm(self.external(X))
+
+        # Pass normalized features into CrossAttention head
         return self.head(features, ext_features)
 
 

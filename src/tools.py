@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from torch.nn import functional as F
+from torch.optim.lr_scheduler import LambdaLR, CosineAnnealingLR, SequentialLR
 
 import lightning as L
 from lightning.pytorch.callbacks import Callback
@@ -83,19 +84,49 @@ class LitClassifier(L.LightningModule):
             'pre-logits': logits,
         }
 
-    def configure_optimizers(self):
-        optimizer = torch.optim.AdamW(
-            self.parameters(),
-            lr=self.optimizer_params['lr'],
-            weight_decay=self.optimizer_params['weight_decay']
-        )
 
-        scheduler = torch.optim.lr_scheduler.LinearLR(
-            optimizer,
-            start_factor=self.optimizer_params['start_factor'],
-            end_factor=self.optimizer_params['end_factor'],
-            total_iters=self.optimizer_params['total_iters']
-        )
+    def configure_optimizers(self):
+        # Extracting parameters from the optimizer config
+        lr = self.optimizer_params.get('lr', 5e-5)
+        weight_decay = self.optimizer_params.get('weight_decay', 1e-4)
+        warmup_epochs = self.optimizer_params.get('warmup_epochs', 20)
+        total_epochs = self.optimizer_params.get('total_epochs', 100)
+
+
+        def exclude_weight_decay(named_parameters):
+            decay, no_decay = [], []
+            for name, param in named_parameters:
+                if param.requires_grad:
+                    if "bn" in name or "ln" in name or "bias" in name or "norm" in name:
+                        no_decay.append(param)  # Exclude BatchNorm and bias parameters
+                    else:
+                        decay.append(param)
+            return [{'params': decay, 'weight_decay': weight_decay},
+                    {'params': no_decay, 'weight_decay': 0.0}]
+
+        # Use the function to split parameters into groups
+        param_groups = exclude_weight_decay(self.named_parameters())
+
+        # Setup optimizer with separated parameter groups
+        optimizer = torch.optim.AdamW(param_groups, lr=lr)
+
+
+
+        # Warmup scheduler for the first few epochs
+        warmup_lr_lambda = lambda epoch: (epoch + 1) / warmup_epochs if epoch < warmup_epochs else 1
+        warmup_scheduler = LambdaLR(optimizer, lr_lambda=warmup_lr_lambda)
+
+        # Cosine annealing scheduler for the rest of the epochs
+        cosine_scheduler = CosineAnnealingLR(optimizer, T_max=(total_epochs - warmup_epochs), eta_min=0)
+
+        # Combining schedulers
+        scheduler = {
+            'scheduler': SequentialLR(
+                optimizer, schedulers=[warmup_scheduler, cosine_scheduler], milestones=[warmup_epochs]
+            ),
+            'interval': 'epoch',
+            'frequency': 1
+        }
 
         return {
             'optimizer': optimizer,
