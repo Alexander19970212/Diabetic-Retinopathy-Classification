@@ -49,7 +49,7 @@ classifier:
   num_heads: 4
   dropout: 0.2
   external_arch: resnext50
-  mode: SSiT_only # attention, SSiT_only, external_only
+  mode: attention # attention, SSiT_only, external_only
   freeze_SSiT: False
   freeze_external: True
 

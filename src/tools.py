@@ -6,6 +6,8 @@ from torch.optim.lr_scheduler import LambdaLR, CosineAnnealingLR, SequentialLR
 import lightning as L
 from lightning.pytorch.callbacks import Callback
 
+import os
+import pandas as pd
 from functools import partial
 
 try:
@@ -49,6 +51,31 @@ class Metrics(Callback):
         self.reset()
 
 
+class SavePredictions(Callback):
+    def __init__(self, codes, path, cb_type='test'):
+        self.filenames = codes
+        self.path = path
+
+        self.reset()
+        setattr(self, 'on_' + cb_type + '_batch_end', self.on_batch_end)
+        setattr(self, 'on_' + cb_type + '_epoch_end', partial(self.on_epoch_end, prefix=cb_type))
+
+    def reset(self):
+        self.y_pred = []
+
+    def on_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
+        y_score = F.softmax(outputs['pre-logits'], dim=-1).detach().cpu().numpy()
+        y_pred = y_score.argmax(axis=1)
+        self.y_pred.extend(y_pred)
+
+
+    def on_epoch_end(self, trainer, pl_module, prefix=''):
+        pd.DataFrame({
+            'id_code': self.filenames,
+            'diagnosis': self.y_pred
+        }).to_csv(self.path, index=False)
+
+
 
 class LitClassifier(L.LightningModule):
     def __init__(self, backbone, optimizer_params):
@@ -81,6 +108,14 @@ class LitClassifier(L.LightningModule):
         self.log('val_loss', loss)
         return {
             'loss': loss,
+            'pre-logits': logits,
+        }
+
+    def test_step(self, batch, batch_idx):
+        images, _ = batch
+        logits = self(images)
+        return {
+            'loss': None,
             'pre-logits': logits,
         }
 

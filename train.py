@@ -17,7 +17,7 @@ from src.classifier import Classifier
 from src.external import Config as ExtConfig
 from src.SSiT import Config as SSiTConfig
 from src.utils import load_config
-from src.tools import LitClassifier, Metrics
+from src.tools import LitClassifier, Metrics, SavePredictions
 from data.preprocessing import get_transform
 
 
@@ -60,6 +60,7 @@ def main():
 
     train_ds = ImageFolder(os.path.join(config['dataset']['path'], 'train'), transform=train_transform)
     valid_ds = ImageFolder(os.path.join(config['dataset']['path'], 'valid'), transform=eval_transform)
+    test_ds = ImageFolder(os.path.join(config['dataset']['path'], 'test'), transform=eval_transform)
 
     train_loader = DataLoader(
         train_ds, shuffle=True,
@@ -69,6 +70,12 @@ def main():
 
     valid_loader = DataLoader(
         valid_ds, shuffle=False,
+        batch_size=config['dataset']['batch_size'],
+        num_workers=config['dataset']['num_workers'],
+    )
+
+    test_loader = DataLoader(
+        test_ds, shuffle=False,
         batch_size=config['dataset']['batch_size'],
         num_workers=config['dataset']['num_workers'],
     )
@@ -92,15 +99,28 @@ def main():
 
     # Train model
     model = LitClassifier(classifier, config['optimizer'])
-    metrics_train = Metrics(num_classes=config['classifier']['num_classes'], cb_type='train')
-    metrics_val = Metrics(num_classes=config['classifier']['num_classes'], cb_type='validation')
-    lr_monitor = LearningRateMonitor(logging_interval='step')
+    callbacks = [
+            Metrics(num_classes=config['classifier']['num_classes'], cb_type='train'),
+            Metrics(num_classes=config['classifier']['num_classes'], cb_type='validation'),
+            LearningRateMonitor(logging_interval='step')
+    ]
+
+    # Testing properties
+    if '-1' in test_ds.classes: # if there are unknown samples
+        codes = [
+            os.path.splitext(os.path.basename(sample))[0]
+            for sample, _ in test_ds.samples
+        ]
+        callbacks.append(SavePredictions(codes, os.path.join(logger.log_dir, 'test_results.csv')))
+    else:
+        callbacks.append(Metrics(num_classes=config['classifier']['num_classes'], cb_type='test'),)
+
     trainer = Trainer(
         logger=logger,
         **config['trainer'],
-        callbacks=[metrics_train, metrics_val, lr_monitor]
+        callbacks=callbacks
     )
-    trainer.fit(model, train_loader, valid_loader)
+    # trainer.fit(model, train_loader, valid_loader)
 
 if __name__ == '__main__':
     main()
