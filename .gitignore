@@ -2,7 +2,7 @@
 datasets/
 datasets_raw/
 checkpoints/
-logs/
+logs*/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

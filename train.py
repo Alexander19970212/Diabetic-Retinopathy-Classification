@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 import lightning as L
 from lightning.pytorch import Trainer, seed_everything
 from lightning.pytorch.loggers import TensorBoardLogger, WandbLogger
-from lightning.pytorch.callbacks import LearningRateMonitor
+from lightning.pytorch.callbacks import LearningRateMonitor, ModelCheckpoint
 
 import os
 import json
@@ -19,7 +19,6 @@ from src.SSiT import Config as SSiTConfig
 from src.utils import load_config
 from src.tools import LitClassifier, Metrics, SavePredictions
 from data.preprocessing import get_transform
-
 
 
 arg_parser = argparse.ArgumentParser(description='Train a classifier')
@@ -100,9 +99,10 @@ def main():
     # Train model
     model = LitClassifier(classifier, config['optimizer'])
     callbacks = [
-            Metrics(num_classes=config['classifier']['num_classes'], cb_type='train'),
-            Metrics(num_classes=config['classifier']['num_classes'], cb_type='validation'),
-            LearningRateMonitor(logging_interval='step')
+        Metrics(num_classes=config['classifier']['num_classes'], cb_type='train'),
+        Metrics(num_classes=config['classifier']['num_classes'], cb_type='validation'),
+        LearningRateMonitor(logging_interval='step'),
+        ModelCheckpoint(mode='max', save_top_k=2, monitor="validation_cohen_kappa")
     ]
 
     # Testing properties
@@ -120,7 +120,7 @@ def main():
         **config['trainer'],
         callbacks=callbacks
     )
-    # trainer.fit(model, train_loader, valid_loader)
+    trainer.fit(model, train_loader, valid_loader)
 
 if __name__ == '__main__':
     main()
