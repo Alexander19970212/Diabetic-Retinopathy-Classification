@@ -102,7 +102,12 @@ def main():
         Metrics(num_classes=config['classifier']['num_classes'], cb_type='train'),
         Metrics(num_classes=config['classifier']['num_classes'], cb_type='validation'),
         LearningRateMonitor(logging_interval='step'),
-        ModelCheckpoint(mode='max', save_top_k=2, monitor="validation_cohen_kappa")
+        ModelCheckpoint(
+            mode='max', save_top_k=3,
+            monitor="validation_cohen_kappa",
+            filename="{epoch:02d}-{validation_cohen_kappa:.4f}",
+            save_last=True
+        ),
     ]
 
     # Testing properties
