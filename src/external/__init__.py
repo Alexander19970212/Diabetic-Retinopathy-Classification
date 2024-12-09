@@ -25,11 +25,11 @@ archs = {
 
 @dataclass
 class Config:
-    arch: str = 'resnet50'
-    features_dim: int = 2048
-    input_size: int = 224
-    layer_keys: List[str] = field(default_factory=lambda: ['fc'])
-    weights: str = 'IMAGENET1K_V2'
+    arch: str = 'efficientnet_m'
+    input_size: int = 384
+    features_dim: int = 1280
+    layer_keys: List[str] = field(default_factory=lambda: ['classifier'])
+    weights: str = 'DEFAULT'
 
 DEFAULT_CONFIG = Config()
 
@@ -40,6 +40,7 @@ class FeatureExtractor(nn.Module):
 
         assert arch in archs.keys(), 'Not implemented architecture.'
 
+        self.arch = arch
         self.input_size = input_size
         self.features_dim = features_dim
         self.layer_keys = layer_keys

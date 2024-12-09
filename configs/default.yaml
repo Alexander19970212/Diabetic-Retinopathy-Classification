@@ -1,5 +1,6 @@
-name: IDRiD_attention_resnext50
+name: IDRiD_attention
 random_seed: 0xC0FFEE
+
 
 # ===== Data Configs: Copy/Paste default and change appropriately =====
 dataset:
@@ -12,8 +13,8 @@ dataset:
 # ===== Optimizer Configs: Copy/Paste default and change appropriately =====
 optimizer:
   # Linear classifier
-  # lr: 0.00005 # if we are not using the grad batches accumulation
-  # lr: 0.0005   # if we are not using the grad batches accumulation (4-8)
+  # lr: 0.00002  # if we are not using the grad batches accumulation
+  # lr: 0.0002   # if we are not using the grad batches accumulation (4-8)
 
   # Attention Classifier
   lr: 0.00002
@@ -42,16 +43,25 @@ trainer:
   enable_checkpointing: True
 
 
-
 # ===== Classifier Configs: Copy/Paste default and change appropriately =====
 classifier:
   num_classes: 5
   num_heads: 4
-  dropout: 0.2
-  external_arch: resnext50
+  dropout: 0.5
   mode: attention # attention, SSiT_only, external_only
   freeze_SSiT: False
   freeze_external: True
+
+
+# ===== Visual Extractor Configs: change accordingly to classifier.external_arch =====
+# ===== example configs can be found at "configs/feature_extractor_archs.yaml"   =====
+external:
+  arch: efficientnet_l
+  input_size: 384
+  features_dim: 1280
+  layer_keys:
+  - classifier
+  weights: DEFAULT
 
 
 # ===== SSiT Configs: probably no need to change (except for feat_concat/global_pool?) =====
@@ -64,7 +74,3 @@ SSiT:
   linear_key: head
   global_pool: 'token'
   feat_concat: True
-
-
-# ===== Visual Extractor Configs: probably no need to change =====
-ext_config_path: configs/feature_extractor_archs.yaml

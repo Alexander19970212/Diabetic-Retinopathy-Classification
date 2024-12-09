@@ -16,7 +16,7 @@ import argparse
 from src.classifier import Classifier
 from src.external import Config as ExtConfig
 from src.SSiT import Config as SSiTConfig
-from src.utils import load_config
+from src.utils import load_config, get_best_checkpoint
 from src.tools import LitClassifier, Metrics, SavePredictions
 from data.preprocessing import get_transform
 
@@ -33,7 +33,6 @@ args = arg_parser.parse_args()
 def main():
     # Load config
     config = load_config(os.path.join(args.config_path, args.config_name))
-    ext_config = load_config(config['ext_config_path'])
     seed_everything(config['random_seed'], workers=True)
 
     # Load logger
@@ -79,25 +78,9 @@ def main():
         num_workers=config['dataset']['num_workers'],
     )
 
+    # Build & Train model
+    model = LitClassifier(config)
 
-    # Build model
-    SSiT_config = SSiTConfig(**config['SSiT'])
-    external_arch = config['classifier']['external_arch']
-    external_config = ExtConfig(**ext_config[external_arch])
-
-    classifier = Classifier(
-        num_classes=config['classifier']['num_classes'],
-        num_heads=config['classifier']['num_heads'],
-        dropout=config['classifier']['dropout'],
-        mode=config['classifier']['mode'],
-        freeze_SSiT=config['classifier']['freeze_SSiT'],
-        freeze_external=config['classifier']['freeze_external'],
-        external_config=external_config,
-        SSiT_config=SSiT_config
-    )
-
-    # Train model
-    model = LitClassifier(classifier, config['optimizer'])
     callbacks = [
         Metrics(num_classes=config['classifier']['num_classes'], cb_type='train'),
         Metrics(num_classes=config['classifier']['num_classes'], cb_type='validation'),
@@ -120,12 +103,17 @@ def main():
     else:
         callbacks.append(Metrics(num_classes=config['classifier']['num_classes'], cb_type='test'),)
 
+    # train the model
     trainer = Trainer(
         logger=logger,
         **config['trainer'],
         callbacks=callbacks
     )
     trainer.fit(model, train_loader, valid_loader)
+
+    # load the best checkpoint
+    trainer.test(model, test_loader, ckpt_path=get_best_checkpoint(logger.log_dir))
+
 
 if __name__ == '__main__':
     main()

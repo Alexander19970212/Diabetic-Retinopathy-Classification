@@ -6,14 +6,21 @@ from torch.optim.lr_scheduler import LambdaLR, CosineAnnealingLR, SequentialLR
 import lightning as L
 from lightning.pytorch.callbacks import Callback
 
-import os
 import pandas as pd
 from functools import partial
 
+from src import SSiT
+
 try:
     from .utils import get_metrics
+    from .classifier import Classifier
+    from .external import Config as ExtConfig
+    from .SSiT import Config as SSiTConfig
 except ImportError:
     from utils import get_metrics
+    from classifier import Classifier
+    from external import Config as ExtConfig
+    from SSiT import Config as SSiTConfig
 
 
 class Metrics(Callback):
@@ -76,17 +83,23 @@ class SavePredictions(Callback):
         }).to_csv(self.path, index=False)
 
 
-
 class LitClassifier(L.LightningModule):
-    def __init__(self, backbone, optimizer_params):
+    def __init__(self, config):
         super().__init__()
-        self.backbone = backbone
-        self.num_classes = self.backbone.num_classes
-        self.optimizer_params = optimizer_params
-
+        self.backbone = Classifier(
+            num_classes=config['classifier']['num_classes'],
+            num_heads=config['classifier']['num_heads'],
+            dropout=config['classifier']['dropout'],
+            mode=config['classifier']['mode'],
+            freeze_SSiT=config['classifier']['freeze_SSiT'],
+            freeze_external=config['classifier']['freeze_external'],
+            external_config=ExtConfig(**config['external']),
+            SSiT_config=SSiTConfig(**config['SSiT'])
+        )
+        self.num_classes = config['classifier']['num_classes']
+        self.optimizer_params = config['optimizer']
         self.loss = nn.CrossEntropyLoss()
-
-        self.save_hyperparameters(ignore=['backbone'])
+        self.save_hyperparameters()
 
     def forward(self, images):
         return self.backbone(images)
@@ -144,8 +157,6 @@ class LitClassifier(L.LightningModule):
 
         # Setup optimizer with separated parameter groups
         optimizer = torch.optim.AdamW(param_groups, lr=lr)
-
-
 
         # Warmup scheduler for the first few epochs
         warmup_lr_lambda = lambda epoch: (epoch + 1) / warmup_epochs if epoch < warmup_epochs else 1
