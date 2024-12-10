@@ -1,0 +1,62 @@
+name: SSiT
+random_seed: 0xC0FFEE
+
+
+# ===== Data Configs: Copy/Paste default and change appropriately =====
+dataset:
+  path: datasets/FGADR
+  batch_size: 32
+  size: 384
+  num_workers: 8
+
+
+# ===== Optimizer Configs: Copy/Paste default and change appropriately =====
+optimizer:
+  lr: 0.00002
+  weight_decay: 0.0001
+  warmup_epochs: 5
+  total_epochs: 25
+
+
+# ===== Trainer Configs: Copy/Paste default and change appropriately =====
+# params can be found here: https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html
+trainer:
+  max_epochs: 25
+  deterministic: True
+  fast_dev_run: False # set to integer for testing purposes (or False)
+
+  accelerator: gpu
+  devices: 1
+  # profiler: simple
+
+  precision: 32
+  gradient_clip_val: 1.0
+  accumulate_grad_batches: 1
+  num_sanity_val_steps: 0
+  check_val_every_n_epoch: 1
+  log_every_n_steps: 1
+  enable_checkpointing: True
+
+
+# ===== Classifier Configs: Copy/Paste default and change appropriately =====
+classifier:
+  num_classes: 5
+  num_heads: 4
+  dropout: 0.5
+  mode: SSiT_only   # attention, SSiT_only, external_only
+  freeze_SSiT: False
+  freeze_external: True
+
+# ===== SSiT Configs: probably no need to change (except for feat_concat/global_pool?) =====
+SSiT:
+  arch: ViT-S-p16
+  input_size: 384
+  features_dim: 768 # if using feat_concat, else 384
+  checkpoint: checkpoints/pretrained_vits_imagenet_initialized.pt
+  checkpoint_key: base_encoder
+  linear_key: head
+  global_pool: 'token'
+  feat_concat: True
+
+external:
+  arch: None
